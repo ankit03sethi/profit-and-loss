@@ -177,7 +177,7 @@ tr:hover td{background:#1f2b47}
 </div>
 
 <script>
-var API_URL='https://script.google.com/macros/s/AKfycbx5w1iy_Huxn09d_RRdAMXE3D7VZG57L2Ggs5iuD4exY3zk-yYTK0YiDl5UAw9ejS4/exec';
+var API_URL='https://script.google.com/macros/s/AKfycbzf-aDimp6R4TUm70JpC32s2il0Fe4bQ5xB62mpK9o9xqFCx6Fpi6lVHhTbg3qfva60/exec';
 
 var DATA={};
 var DATA_CACHE={};
@@ -287,7 +287,7 @@ function renderPLCards(){
   var returns=pc.returns||0;
   var h='';
   h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">REVENUE</div><div class="vl">'+fmtCur(revenue)+'</div></div>';
-  h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#e09f3e">'+fmtCur(cop)+'</div></div>';
+  h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#e09f3e">-'+fmtCur(Math.abs(cop))+'</div></div>';
   h+='<div class="cd r" style="cursor:pointer" onclick="openPLDrill(\'returns\')"><div class="lb">RETURNS</div><div class="vl" style="color:#dc2f02">'+fmtCur(returns)+'</div></div>';
 
   // Type cards in specified order
@@ -295,6 +295,7 @@ function renderPLCards(){
     var tName=TYPE_CARD_ORDER[ti];
     var tData=td[tName];
     var tTotal=tData?tData.total:0;
+    if(tName.toUpperCase()==='TRANSFER') tTotal=Math.abs(tTotal);
     var tColor=TYPE_CARD_COLORS[tName]||'#4fc3f7';
     h+='<div class="cd" style="cursor:pointer;border-left-color:'+tColor+'" onclick="openTypeDrill(\''+tName.replace(/'/g,"\\'")+'\')">';
     h+='<div class="lb">'+tName.toUpperCase()+'</div>';
@@ -310,6 +311,7 @@ function renderPLCards(){
     if(TYPE_CARD_ORDER.indexOf(aName)!==-1)continue;  // already shown above
     var aData=td[aName];
     var aTotal=aData?aData.total:0;
+    if(aName.toUpperCase()==='TRANSFER') aTotal=Math.abs(aTotal);
     h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\''+aName.replace(/'/g,"\\'")+'\')">';
     h+='<div class="lb">'+aName.toUpperCase()+'</div>';
     h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(aTotal)+'</div>';
