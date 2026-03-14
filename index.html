@@ -110,16 +110,14 @@ tr:hover td{background:#1f2b47}
 <div class="section-title" style="color:#e09f3e">FINANCIAL OVERVIEW</div>
 <div class="cards" id="summaryCards"></div>
 
-<!-- DATE FILTER -->
+<!-- MONTH FILTER -->
 <div class="fbox">
 <div class="frow" style="flex-wrap:wrap;gap:6px">
-  <select id="fDateRange" onchange="loadData()" style="background:#0a1628;color:#39ff14;border:1px solid #39ff14;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
-    <option value="">All Time</option>
-    <option value="30">Last 30 Days</option>
-    <option value="60">Last 60 Days</option>
-    <option value="90" selected>Last 90 Days</option>
-    <option value="180">Last 6 Months</option>
-    <option value="365">Last 1 Year</option>
+  <select id="fMonth" onchange="applyFilter()" style="background:#0a1628;color:#39ff14;border:1px solid #39ff14;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
+    <option value="">All Months</option>
+  </select>
+  <select id="fYear" onchange="applyFilter()" style="background:#0a1628;color:#e09f3e;border:1px solid #e09f3e;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
+    <option value="">All Years</option>
   </select>
   <button class="fbtn ref" onclick="DATA_CACHE={};loadData()">Refresh</button>
   <button class="fbtn dl" onclick="downloadCSV()">Download CSV</button>
@@ -195,11 +193,17 @@ function destroyChart(id){if(_charts[id]){_charts[id].destroy();delete _charts[i
 
 // ===== LOAD DATA =====
 function loadData(){
-  var daysVal=document.getElementById('fDateRange')?document.getElementById('fDateRange').value:'';
-  var fetchUrl=daysVal?API_URL+'?days='+daysVal:API_URL;
-  var cacheKey=daysVal||'all';
+  var selMonth=document.getElementById('fMonth')?document.getElementById('fMonth').value:'';
+  var selYear=document.getElementById('fYear')?document.getElementById('fYear').value:'';
 
-  if(DATA_CACHE[cacheKey]){DATA=DATA_CACHE[cacheKey];renderAll();return;}
+  var fetchUrl=API_URL;
+  var params=[];
+  if(selMonth)params.push('month='+encodeURIComponent(selMonth));
+  if(selYear)params.push('year='+encodeURIComponent(selYear));
+  if(params.length>0)fetchUrl+='?'+params.join('&');
+
+  var cacheKey=selMonth+'|'+selYear;
+  if(DATA_CACHE[cacheKey]){DATA=DATA_CACHE[cacheKey];populateFilters(DATA);renderAll();return;}
 
   document.getElementById('loader').style.display='block';
   document.getElementById('app').style.display='none';
@@ -216,6 +220,7 @@ function loadData(){
         document.getElementById('loader').style.display='none';
         document.getElementById('app').style.display='block';
         document.getElementById('lastUp').textContent='Updated: '+new Date().toLocaleString()+' | Data: '+(d.timestamp||'');
+        populateFilters(d);
         renderAll();
       }catch(e){onErr('JSON parse error: '+e.message);}
     })
@@ -223,6 +228,34 @@ function loadData(){
 }
 
 function onErr(msg){document.getElementById('loader').innerHTML='<div style="color:#dc2f02;font-size:14px">'+msg+'</div><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Test API directly</a>';}
+
+// ===== POPULATE MONTH/YEAR DROPDOWNS =====
+function populateFilters(d){
+  var months=d.availableMonths||[];
+  var years=d.availableYears||[];
+
+  var mSel=document.getElementById('fMonth');
+  var curM=mSel.value;
+  mSel.innerHTML='<option value="">All Months</option>';
+  for(var i=0;i<months.length;i++){
+    mSel.innerHTML+='<option value="'+months[i]+'">'+months[i]+'</option>';
+  }
+  if(curM)mSel.value=curM;
+
+  var ySel=document.getElementById('fYear');
+  var curY=ySel.value;
+  ySel.innerHTML='<option value="">All Years</option>';
+  for(var i=0;i<years.length;i++){
+    ySel.innerHTML+='<option value="'+years[i]+'">'+years[i]+'</option>';
+  }
+  if(curY)ySel.value=curY;
+}
+
+// ===== APPLY FILTER (re-fetch from API with month/year params) =====
+function applyFilter(){
+  DATA_CACHE={};
+  loadData();
+}
 
 // ===== RENDER ALL =====
 function renderAll(){

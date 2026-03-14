@@ -714,21 +714,9 @@ function doGet(e) {
     var tz = Session.getScriptTimeZone();
     var now = new Date();
 
-    // Date filter
-    var daysParam = (e && e.parameter && e.parameter.days !== undefined) ? parseInt(e.parameter.days, 10) : -1;
-    var filterStartStr = '', filterEndStr = '';
-    if (daysParam === 0) {
-      var fd = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      filterStartStr = Utilities.formatDate(fd, tz, 'yyyy-MM-dd');
-      filterEndStr = filterStartStr;
-    } else if (daysParam === 1) {
-      var yd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-      filterStartStr = Utilities.formatDate(yd, tz, 'yyyy-MM-dd');
-      filterEndStr = filterStartStr;
-    } else if (daysParam > 1) {
-      filterStartStr = Utilities.formatDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysParam), tz, 'yyyy-MM-dd');
-      filterEndStr = Utilities.formatDate(now, tz, 'yyyy-MM-dd');
-    }
+    // Month filter: ?month=January&year=2025 (matches column D and C directly)
+    var filterMonth = (e && e.parameter && e.parameter.month) ? String(e.parameter.month).trim().toLowerCase() : '';
+    var filterYear = (e && e.parameter && e.parameter.year) ? String(e.parameter.year).trim() : '';
 
     // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT
     var colRanges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L'];
@@ -752,6 +740,17 @@ function doGet(e) {
     var plRevenue = 0, plCosts = 0;
     var seenEntries = {};
 
+    // Collect ALL unique months/years (before filtering) for dropdown population
+    var allMonthNames = {}, allYears = {};
+    for (var r0 = 0; r0 < maxRows; r0++) {
+      var _t = r0 < cols[0].length && cols[0][r0].length > 0 ? cols[0][r0][0] : '';
+      if (!_t || String(_t).trim() === '') continue;
+      var _y = String(r0 < cols[2].length && cols[2][r0].length > 0 ? cols[2][r0][0] : '').trim();
+      var _m = String(r0 < cols[3].length && cols[3][r0].length > 0 ? cols[3][r0][0] : '').trim();
+      if (_m) allMonthNames[_m] = true;
+      if (_y) allYears[_y] = true;
+    }
+
     for (var r = 0; r < maxRows; r++) {
       var total = r < cols[0].length && cols[0][r].length > 0 ? cols[0][r][0] : '';
       if (!total || String(total).trim() === '') continue;
@@ -765,19 +764,16 @@ function doGet(e) {
       var qty = _toNum(r < cols[10].length && cols[10][r].length > 0 ? cols[10][r][0] : 0);
       var amount = _toNum(r < cols[11].length && cols[11][r].length > 0 ? cols[11][r][0] : 0);
 
-      // Date handling for filter
+      // Month key for grouping
       var monthKey = '';
       if (year && month) {
         var mn = _monthToNum(month);
         monthKey = year + '-' + mn;
       }
 
-      // Date filter (approximate by month since we don't have exact date)
-      if (filterStartStr && monthKey) {
-        var startMonth = filterStartStr.slice(0, 7); // yyyy-MM
-        var endMonth = filterEndStr.slice(0, 7);
-        if (monthKey < startMonth || monthKey > endMonth) continue;
-      }
+      // Month/Year filter (column D = month name, column C = year)
+      if (filterMonth && String(month).trim().toLowerCase() !== filterMonth) continue;
+      if (filterYear && year !== filterYear) continue;
 
       // Summary
       summary.totalEntries++;
@@ -851,6 +847,17 @@ function doGet(e) {
       netPL: Math.round((plRevenue + plCosts) * 100) / 100
     };
 
+    // Sort months in calendar order for dropdown
+    var monthOrder = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var sortedMonths = [];
+    for (var mi = 0; mi < monthOrder.length; mi++) {
+      if (allMonthNames[monthOrder[mi]]) sortedMonths.push(monthOrder[mi]);
+    }
+    var amK = Object.keys(allMonthNames);
+    for (var ai = 0; ai < amK.length; ai++) {
+      if (sortedMonths.indexOf(amK[ai]) === -1) sortedMonths.push(amK[ai]);
+    }
+
     var result = {
       summary: summary,
       byPlatform: byPlatform,
@@ -862,6 +869,8 @@ function doGet(e) {
       platforms: Object.keys(byPlatform).sort(),
       companies: Object.keys(byCompany).sort(),
       types: Object.keys(byType).sort(),
+      availableMonths: sortedMonths,
+      availableYears: Object.keys(allYears).sort(),
       timestamp: new Date().toISOString()
     };
 
