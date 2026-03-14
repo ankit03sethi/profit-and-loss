@@ -737,9 +737,10 @@ function doGet(e) {
 
     var summary = {totalEntries:0, totalQty:0, totalAmount:0};
     var byPlatform = {}, byCompany = {}, byType = {}, byType2 = {}, byMonthMap = {}, dailyMap = {};
-    var plRevenue = 0, plCosts = 0, plCOP = 0, plCardRevenue = 0;
+    var plRevenue = 0, plCosts = 0, plCOP = 0, plCardRevenue = 0, plReturns = 0;
     var plRevenueByPlatform = {}, plRevenueByCompany = {};
     var plCOPByPlatform = {}, plCOPByCompany = {};
+    var plReturnsByPlatform = {}, plReturnsByCompany = {};
     var seenEntries = {};
 
     // Collect ALL unique months/years (before filtering) for dropdown population
@@ -791,7 +792,7 @@ function doGet(e) {
         plCosts += amount;
       }
 
-      // NEW P&L cards: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order"
+      // NEW P&L cards: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order", Returns = SUM(U) where G="Return"
       if (type === 'Order') {
         plCardRevenue += colU;
         plCOP += colT;
@@ -809,6 +810,17 @@ function doGet(e) {
         if (!plCOPByCompany[company]) plCOPByCompany[company] = {value:0, entries:0};
         plCOPByCompany[company].value += colT;
         plCOPByCompany[company].entries++;
+      }
+      if (type === 'Return') {
+        plReturns += colU;
+        // Per-platform Returns drill-down
+        if (!plReturnsByPlatform[platform]) plReturnsByPlatform[platform] = {value:0, entries:0};
+        plReturnsByPlatform[platform].value += colU;
+        plReturnsByPlatform[platform].entries++;
+        // Per-company Returns drill-down
+        if (!plReturnsByCompany[company]) plReturnsByCompany[company] = {value:0, entries:0};
+        plReturnsByCompany[company].value += colU;
+        plReturnsByCompany[company].entries++;
       }
 
       // byPlatform
@@ -871,20 +883,25 @@ function doGet(e) {
       netPL: Math.round((plRevenue + plCosts) * 100) / 100
     };
 
-    // NEW P&L cards data: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order"
+    // NEW P&L cards data: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order", Returns = SUM(U) where G="Return"
     // Round per-platform/company values
     for (var rp in plRevenueByPlatform) { plRevenueByPlatform[rp].value = Math.round(plRevenueByPlatform[rp].value * 100) / 100; }
     for (var cp in plCOPByPlatform) { plCOPByPlatform[cp].value = Math.round(plCOPByPlatform[cp].value * 100) / 100; }
     for (var rc in plRevenueByCompany) { plRevenueByCompany[rc].value = Math.round(plRevenueByCompany[rc].value * 100) / 100; }
     for (var cc in plCOPByCompany) { plCOPByCompany[cc].value = Math.round(plCOPByCompany[cc].value * 100) / 100; }
+    for (var rtp in plReturnsByPlatform) { plReturnsByPlatform[rtp].value = Math.round(plReturnsByPlatform[rtp].value * 100) / 100; }
+    for (var rtc in plReturnsByCompany) { plReturnsByCompany[rtc].value = Math.round(plReturnsByCompany[rtc].value * 100) / 100; }
 
     var plCards = {
       revenue: Math.round(plCardRevenue * 100) / 100,
       cop: Math.round(plCOP * 100) / 100,
+      returns: Math.round(plReturns * 100) / 100,
       revenueByPlatform: plRevenueByPlatform,
       copByPlatform: plCOPByPlatform,
+      returnsByPlatform: plReturnsByPlatform,
       revenueByCompany: plRevenueByCompany,
-      copByCompany: plCOPByCompany
+      copByCompany: plCOPByCompany,
+      returnsByCompany: plReturnsByCompany
     };
 
     // Sort months in calendar order for dropdown
