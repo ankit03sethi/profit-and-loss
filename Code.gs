@@ -793,7 +793,8 @@ function doGet(e) {
       }
 
       // NEW P&L cards: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order", Returns = SUM(U) where G="Return"
-      if (type === 'Order') {
+      var typeUpper = type.toUpperCase();
+      if (typeUpper === 'ORDER') {
         plCardRevenue += colU;
         plCOP += colT;
         // Per-platform Revenue/COP drill-down
@@ -811,7 +812,7 @@ function doGet(e) {
         plCOPByCompany[company].value += colT;
         plCOPByCompany[company].entries++;
       }
-      if (type === 'Return') {
+      if (typeUpper === 'RETURN') {
         plReturns += colU;
         // Per-platform Returns drill-down
         if (!plReturnsByPlatform[platform]) plReturnsByPlatform[platform] = {value:0, entries:0};
