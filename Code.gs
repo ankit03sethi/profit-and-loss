@@ -331,29 +331,35 @@ function computeFormulas() {
 
   // === COLUMN V (col 22): S value on 1st qualifying entry per unique A ===
   // RULES:
-  // 1. Rows where G = ORDER, RETURN, or SHIPPING SERVICE → W = blank (totally ignored)
-  // 2. Among remaining rows, for each unique A value → W = S value on 1st entry only, rest blank
-  var EXCLUDED_TYPES_W = {'ORDER':1, 'RETURN':1, 'SHIPPING SERVICE':1};
+  // 1. Rows where G = ORDER, RETURN, or SHIPPING SERVICE → V = blank (totally ignored)
+  // 2. Among remaining rows, for each unique A value → V = S value on 1st entry only, rest blank
+  var EXCLUDED_TYPES_V = {'ORDER':1, 'RETURN':1, 'SHIPPING SERVICE':1};
   var firstQualifyingRow = {};  // A value → first row index where G is NOT in excluded types
+  var allTypesFound = {};       // DEBUG: collect all unique G values
+  var qualifyingCount = 0;      // DEBUG: count qualifying rows
 
   for (var i = 0; i < numRows; i++) {
     var a = String(dataA[i][0]).trim().toUpperCase();
     if (!a) continue;
     var g = String(dataG[i][0]).trim().toUpperCase();
-    if (EXCLUDED_TYPES_W[g]) continue;  // totally ignore these
+    allTypesFound[g] = (allTypesFound[g] || 0) + 1;  // DEBUG
+    if (EXCLUDED_TYPES_V[g]) continue;  // totally ignore these
+    qualifyingCount++;
     if (firstQualifyingRow[a] === undefined) firstQualifyingRow[a] = i;
   }
 
-  var outW = [];
+  var vFilledCount = 0;
+  var outV = [];
   for (var i = 0; i < numRows; i++) {
     var a = String(dataA[i][0]).trim().toUpperCase();
-    if (!a) { outW.push(['']); continue; }
+    if (!a) { outV.push(['']); continue; }
     var g = String(dataG[i][0]).trim().toUpperCase();
-    if (EXCLUDED_TYPES_W[g]) { outW.push(['']); continue; }  // excluded type → blank
+    if (EXCLUDED_TYPES_V[g]) { outV.push(['']); continue; }  // excluded type → blank
     if (firstQualifyingRow[a] === i) {
-      outW.push([outS[i][0]]);  // 1st qualifying entry → show S value
+      outV.push([outS[i][0]]);  // 1st qualifying entry → show S value
+      vFilledCount++;
     } else {
-      outW.push(['']);  // not 1st → blank
+      outV.push(['']);  // not 1st → blank
     }
   }
 
@@ -361,7 +367,22 @@ function computeFormulas() {
   ms.getRange(2, 19, numRows, 1).setValues(outS);
   ms.getRange(2, 20, numRows, 1).setValues(outT);
   ms.getRange(2, 21, numRows, 1).setValues(outU);
-  ms.getRange(2, 22, numRows, 1).setValues(outW);
+  ms.getRange(2, 22, numRows, 1).setValues(outV);
+
+  // DEBUG ALERT: show what types exist and how many qualifying rows
+  var typeList = [];
+  var typeKeys = Object.keys(allTypesFound).sort();
+  for (var ti = 0; ti < typeKeys.length; ti++) {
+    typeList.push(typeKeys[ti] + ': ' + allTypesFound[typeKeys[ti]]);
+  }
+  SpreadsheetApp.getUi().alert(
+    'COLUMN V DEBUG:\n' +
+    'Total rows: ' + numRows + '\n' +
+    'Qualifying rows (not Order/Return/Shipping Service): ' + qualifyingCount + '\n' +
+    'Unique A values with qualifying row: ' + Object.keys(firstQualifyingRow).length + '\n' +
+    'V cells filled: ' + vFilledCount + '\n\n' +
+    'ALL TYPE VALUES IN G:\n' + typeList.join('\n')
+  );
 }
 
 // ===================== FAST READ (Sheets API batchGet) =====================
