@@ -786,6 +786,7 @@ function doGet(e) {
 
     var summary = {totalEntries:0, totalQty:0, totalAmount:0};
     var byPlatform = {}, byCompany = {}, byType = {}, byType2 = {}, byMonthMap = {}, dailyMap = {};
+    var typeDetail = {};  // per-type drill-down: typeDetail[type] = {total, byPlatform:{}, byCompany:{}}
     var plRevenue = 0, plCosts = 0, plCOP = 0, plCardRevenue = 0, plReturns = 0;
     var plRevenueByPlatform = {}, plRevenueByCompany = {};
     var plCOPByPlatform = {}, plCOPByCompany = {};
@@ -891,6 +892,17 @@ function doGet(e) {
       byType[type].qty += qty;
       byType[type].amount += amount;
 
+      // typeDetail: per-type drill-down by platform and company (using column L amount)
+      if (!typeDetail[type]) typeDetail[type] = {total:0, entries:0, byPlatform:{}, byCompany:{}};
+      typeDetail[type].total += amount;
+      typeDetail[type].entries++;
+      if (!typeDetail[type].byPlatform[platform]) typeDetail[type].byPlatform[platform] = {value:0, entries:0};
+      typeDetail[type].byPlatform[platform].value += amount;
+      typeDetail[type].byPlatform[platform].entries++;
+      if (!typeDetail[type].byCompany[company]) typeDetail[type].byCompany[company] = {value:0, entries:0};
+      typeDetail[type].byCompany[company].value += amount;
+      typeDetail[type].byCompany[company].entries++;
+
       // byType2
       if (!byType2[type2]) byType2[type2] = {entries:0, qty:0, amount:0};
       byType2[type2].entries++;
@@ -914,6 +926,12 @@ function doGet(e) {
     for (var k in byPlatform) { byPlatform[k].amount = Math.round(byPlatform[k].amount * 100) / 100; byPlatform[k].qty = Math.round(byPlatform[k].qty * 100) / 100; }
     for (var k in byCompany) { byCompany[k].amount = Math.round(byCompany[k].amount * 100) / 100; byCompany[k].qty = Math.round(byCompany[k].qty * 100) / 100; }
     for (var k in byType) { byType[k].amount = Math.round(byType[k].amount * 100) / 100; byType[k].qty = Math.round(byType[k].qty * 100) / 100; }
+    // Round typeDetail
+    for (var td in typeDetail) {
+      typeDetail[td].total = Math.round(typeDetail[td].total * 100) / 100;
+      for (var tdp in typeDetail[td].byPlatform) { typeDetail[td].byPlatform[tdp].value = Math.round(typeDetail[td].byPlatform[tdp].value * 100) / 100; }
+      for (var tdc in typeDetail[td].byCompany) { typeDetail[td].byCompany[tdc].value = Math.round(typeDetail[td].byCompany[tdc].value * 100) / 100; }
+    }
     for (var k in byType2) { byType2[k].amount = Math.round(byType2[k].amount * 100) / 100; byType2[k].qty = Math.round(byType2[k].qty * 100) / 100; }
 
     var byMonth = [];
@@ -974,6 +992,7 @@ function doGet(e) {
       byMonth: byMonth,
       plBreakdown: plBreakdown,
       plCards: plCards,
+      typeDetail: typeDetail,
       platforms: Object.keys(byPlatform).sort(),
       companies: Object.keys(byCompany).sort(),
       types: Object.keys(byType).sort(),

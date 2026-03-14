@@ -272,16 +272,141 @@ function renderAll(){
 var PL_DM={type:'',level:0,platform:'',company:''};
 var PL_COLORS=['#39ff14','#4fc3f7','#e09f3e','#a855f7','#f72585','#00bcd4','#ff6b35','#7b68ee','#ff9800','#8bc34a','#ef5350','#26a69a'];
 
+// Type card sequence (after Revenue/COP/Returns) — matched from column G spellings
+var TYPE_CARD_ORDER=['Advertisement','Warehouse Charges','Value Added Services','Affiliate Fee','Charges','Adjustment','Reimbursements'];
+// Types excluded from cards (already have special cards or excluded)
+var TYPE_CARD_EXCLUDE={'Order':1,'Return':1,'Shipping Service':1,'Fee Refund':1,'MP Fee Rebate':1};
+// Colors for type cards
+var TYPE_CARD_COLORS={'Advertisement':'#a855f7','Warehouse Charges':'#f72585','Value Added Services':'#00bcd4','Affiliate Fee':'#ff6b35','Charges':'#7b68ee','Adjustment':'#ff9800','Reimbursements':'#8bc34a'};
+
 function renderPLCards(){
   var pc=DATA.plCards||{};
+  var td=DATA.typeDetail||{};
   var revenue=pc.revenue||0;
   var cop=pc.cop||0;
-  var h='';
   var returns=pc.returns||0;
-  h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">REVENUE</div><div class="vl">'+fmtCur(revenue)+'</div><div style="font-size:10px;color:#888;margin-top:2px">SUM(U) where G=Order</div></div>';
-  h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#e09f3e">'+fmtCur(cop)+'</div><div style="font-size:10px;color:#888;margin-top:2px">SUM(T) where G=Order</div></div>';
-  h+='<div class="cd r" style="cursor:pointer" onclick="openPLDrill(\'returns\')"><div class="lb">RETURNS</div><div class="vl" style="color:#dc2f02">'+fmtCur(returns)+'</div><div style="font-size:10px;color:#888;margin-top:2px">SUM(U) where G=Return</div></div>';
+  var h='';
+  h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">REVENUE</div><div class="vl">'+fmtCur(revenue)+'</div></div>';
+  h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#e09f3e">'+fmtCur(cop)+'</div></div>';
+  h+='<div class="cd r" style="cursor:pointer" onclick="openPLDrill(\'returns\')"><div class="lb">RETURNS</div><div class="vl" style="color:#dc2f02">'+fmtCur(returns)+'</div></div>';
+
+  // Type cards in specified order
+  for(var ti=0;ti<TYPE_CARD_ORDER.length;ti++){
+    var tName=TYPE_CARD_ORDER[ti];
+    var tData=td[tName];
+    var tTotal=tData?tData.total:0;
+    var tColor=TYPE_CARD_COLORS[tName]||'#4fc3f7';
+    h+='<div class="cd" style="cursor:pointer;border-left-color:'+tColor+'" onclick="openTypeDrill(\''+tName.replace(/'/g,"\\'")+'\')">';
+    h+='<div class="lb">'+tName.toUpperCase()+'</div>';
+    h+='<div class="vl" style="color:'+tColor+'">'+fmtCur(tTotal)+'</div>';
+    h+='</div>';
+  }
+
+  // Any remaining types not in the ordered list and not excluded
+  var allTypes=Object.keys(td).sort();
+  for(var ai=0;ai<allTypes.length;ai++){
+    var aName=allTypes[ai];
+    if(TYPE_CARD_EXCLUDE[aName])continue;
+    if(TYPE_CARD_ORDER.indexOf(aName)!==-1)continue;  // already shown above
+    var aData=td[aName];
+    var aTotal=aData?aData.total:0;
+    h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\''+aName.replace(/'/g,"\\'")+'\')">';
+    h+='<div class="lb">'+aName.toUpperCase()+'</div>';
+    h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(aTotal)+'</div>';
+    h+='</div>';
+  }
+
   document.getElementById('plCards').innerHTML=h;
+}
+
+// ===== TYPE CARD DRILL-DOWN =====
+function openTypeDrill(typeName){
+  PL_DM={type:'typeCard',level:1,platform:'',company:'',typeName:typeName};
+  document.getElementById('modalTitle').textContent=typeName+' - Platform Breakdown';
+  document.getElementById('modalNav').style.display='none';
+  document.getElementById('modal').classList.add('show');
+  document.body.style.overflow='hidden';
+  modalStack=[];
+  renderTypeDrillPlatforms();
+}
+
+function getTypeDrillColor(typeName){return TYPE_CARD_COLORS[typeName]||'#4fc3f7';}
+
+function renderTypeDrillPlatforms(){
+  var td=DATA.typeDetail||{};
+  var tData=td[PL_DM.typeName];
+  if(!tData||!tData.byPlatform||!Object.keys(tData.byPlatform).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
+  var byPlat=tData.byPlatform;
+  var clr=getTypeDrillColor(PL_DM.typeName);
+  var keys=Object.keys(byPlat).sort(function(a,b){return Math.abs(byPlat[b].value)-Math.abs(byPlat[a].value);});
+  var total=0;for(var i=0;i<keys.length;i++)total+=byPlat[keys[i]].value;
+  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Total: <span style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</span> | '+keys.length+' platforms</div>';
+  h+='<div class="drill-grid">';
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var d=byPlat[k];
+    var color=PL_COLORS[i%PL_COLORS.length];
+    var pct=total!==0?((d.value/total)*100):0;
+    h+='<div class="drill-item" style="border-left-color:'+color+'" onclick="typeDrillToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
+    h+='<div class="di-name">'+k+'</div>';
+    h+='<div class="di-count">'+fmt(d.entries)+' entries</div>';
+    h+='<div class="di-amt" style="color:'+clr+'">'+fmtCur(d.value)+'</div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+'</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<div class="tbox"><h3>'+PL_DM.typeName.toUpperCase()+' BY PLATFORM <span>Click for company breakdown</span></h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">PLATFORM</th><th>ENTRIES</th><th>VALUE</th><th>% OF TOTAL</th></tr></thead><tbody>';
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var d=byPlat[k];var pct=total!==0?((d.value/total)*100):0;var color=PL_COLORS[i%PL_COLORS.length];
+    h+='<tr style="cursor:pointer" onclick="typeDrillToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
+    h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+k+'</td>';
+    h+='<td>'+fmt(d.entries)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(d.value)+'</td><td>'+fmtPct(pct)+'</td></tr>';
+  }
+  var totE=0;for(var i=0;i<keys.length;i++)totE+=byPlat[keys[i]].entries;
+  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7"><td style="text-align:left;color:#4fc3f7">TOTAL</td><td style="color:#fff">'+fmt(totE)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</td><td>100%</td></tr>';
+  h+='</tbody></table></div></div>';
+  document.getElementById('modalBody').innerHTML=h;
+}
+
+function typeDrillToPlatform(plat){
+  PL_DM.level=2;PL_DM.platform=plat;
+  document.getElementById('modalTitle').textContent=PL_DM.typeName+' - '+plat+' - Company Breakdown';
+  document.getElementById('modalNav').style.display='flex';
+  document.getElementById('modalBread').innerHTML='<span>'+PL_DM.typeName+'</span> &rarr; <span>'+plat+'</span>';
+  renderTypeDrillCompanies();
+}
+
+function renderTypeDrillCompanies(){
+  var td=DATA.typeDetail||{};
+  var tData=td[PL_DM.typeName];
+  if(!tData||!tData.byCompany||!Object.keys(tData.byCompany).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
+  var byComp=tData.byCompany;
+  var clr=getTypeDrillColor(PL_DM.typeName);
+  var keys=Object.keys(byComp).sort(function(a,b){return Math.abs(byComp[b].value)-Math.abs(byComp[a].value);});
+  var total=0;for(var i=0;i<keys.length;i++)total+=byComp[keys[i]].value;
+  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Total: <span style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</span> | '+keys.length+' companies</div>';
+  h+='<div class="drill-grid">';
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var d=byComp[k];
+    var color=PL_COLORS[i%PL_COLORS.length];
+    var pct=total!==0?((d.value/total)*100):0;
+    h+='<div class="drill-item" style="border-left-color:'+color+'">';
+    h+='<div class="di-name">'+k+'</div>';
+    h+='<div class="di-count">'+fmt(d.entries)+' entries</div>';
+    h+='<div class="di-amt" style="color:'+clr+'">'+fmtCur(d.value)+'</div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+'</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<div class="tbox"><h3>'+PL_DM.typeName.toUpperCase()+' BY COMPANY</h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">COMPANY</th><th>ENTRIES</th><th>VALUE</th><th>% OF TOTAL</th></tr></thead><tbody>';
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var d=byComp[k];var pct=total!==0?((d.value/total)*100):0;var color=PL_COLORS[i%PL_COLORS.length];
+    h+='<tr><td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+k+'</td>';
+    h+='<td>'+fmt(d.entries)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(d.value)+'</td><td>'+fmtPct(pct)+'</td></tr>';
+  }
+  var totE=0;for(var i=0;i<keys.length;i++)totE+=byComp[keys[i]].entries;
+  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7"><td style="text-align:left;color:#4fc3f7">TOTAL</td><td style="color:#fff">'+fmt(totE)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</td><td>100%</td></tr>';
+  h+='</tbody></table></div></div>';
+  document.getElementById('modalBody').innerHTML=h;
 }
 
 // ===== P&L CARD DRILL-DOWN (Platform → Company) =====
@@ -662,6 +787,14 @@ function closeModal(){
 }
 
 function modalBack(){
+  // Type card drill-down back
+  if(PL_DM.type==='typeCard'&&PL_DM.level===2){
+    PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
+    document.getElementById('modalTitle').textContent=PL_DM.typeName+' - Platform Breakdown';
+    document.getElementById('modalNav').style.display='none';
+    renderTypeDrillPlatforms();
+    return;
+  }
   // P&L drill-down back navigation
   if(PL_DM.level===2){
     PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
