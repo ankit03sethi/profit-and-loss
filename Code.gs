@@ -718,8 +718,8 @@ function doGet(e) {
     var filterMonth = (e && e.parameter && e.parameter.month) ? String(e.parameter.month).trim().toLowerCase() : '';
     var filterYear = (e && e.parameter && e.parameter.year) ? String(e.parameter.year).trim() : '';
 
-    // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT
-    var colRanges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L'];
+    // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT, T(col20), U(col21)
+    var colRanges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L','T2:T','U2:U'];
     var ranges = [];
     for (var i = 0; i < colRanges.length; i++) ranges.push("'" + tab + "'!" + colRanges[i]);
     var res = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: ranges, valueRenderOption: 'UNFORMATTED_VALUE'});
@@ -733,11 +733,13 @@ function doGet(e) {
 
     var cols = [];
     for (var c = 0; c < vr.length; c++) cols.push(vr[c].values || []);
-    // cols: 0=total, 1=sno, 2=year, 3=month, 4=platform, 5=company, 6=type, 7=type2, 8=orderId, 9=sku, 10=qty, 11=amount
+    // cols: 0=total, 1=sno, 2=year, 3=month, 4=platform, 5=company, 6=type, 7=type2, 8=orderId, 9=sku, 10=qty, 11=amount, 12=T(col20), 13=U(col21)
 
     var summary = {totalEntries:0, totalQty:0, totalAmount:0};
     var byPlatform = {}, byCompany = {}, byType = {}, byType2 = {}, byMonthMap = {}, dailyMap = {};
-    var plRevenue = 0, plCosts = 0;
+    var plRevenue = 0, plCosts = 0, plCOP = 0, plCardRevenue = 0;
+    var plRevenueByPlatform = {}, plRevenueByCompany = {};
+    var plCOPByPlatform = {}, plCOPByCompany = {};
     var seenEntries = {};
 
     // Collect ALL unique months/years (before filtering) for dropdown population
@@ -763,6 +765,8 @@ function doGet(e) {
       var type2 = String(r < cols[7].length && cols[7][r].length > 0 ? cols[7][r][0] : '').trim() || 'Unknown';
       var qty = _toNum(r < cols[10].length && cols[10][r].length > 0 ? cols[10][r][0] : 0);
       var amount = _toNum(r < cols[11].length && cols[11][r].length > 0 ? cols[11][r][0] : 0);
+      var colT = _toNum(r < cols[12].length && cols[12][r].length > 0 ? cols[12][r][0] : 0);
+      var colU = _toNum(r < cols[13].length && cols[13][r].length > 0 ? cols[13][r][0] : 0);
 
       // Month key for grouping
       var monthKey = '';
@@ -780,11 +784,31 @@ function doGet(e) {
       summary.totalQty += qty;
       summary.totalAmount += amount;
 
-      // P&L
+      // P&L (old logic based on REVENUE_TYPES — kept for byType section)
       if (REVENUE_TYPES[type]) {
         plRevenue += amount;
       } else {
         plCosts += amount;
+      }
+
+      // NEW P&L cards: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order"
+      if (type === 'Order') {
+        plCardRevenue += colU;
+        plCOP += colT;
+        // Per-platform Revenue/COP drill-down
+        if (!plRevenueByPlatform[platform]) plRevenueByPlatform[platform] = {value:0, entries:0};
+        plRevenueByPlatform[platform].value += colU;
+        plRevenueByPlatform[platform].entries++;
+        if (!plCOPByPlatform[platform]) plCOPByPlatform[platform] = {value:0, entries:0};
+        plCOPByPlatform[platform].value += colT;
+        plCOPByPlatform[platform].entries++;
+        // Per-company Revenue/COP drill-down
+        if (!plRevenueByCompany[company]) plRevenueByCompany[company] = {value:0, entries:0};
+        plRevenueByCompany[company].value += colU;
+        plRevenueByCompany[company].entries++;
+        if (!plCOPByCompany[company]) plCOPByCompany[company] = {value:0, entries:0};
+        plCOPByCompany[company].value += colT;
+        plCOPByCompany[company].entries++;
       }
 
       // byPlatform
@@ -847,6 +871,22 @@ function doGet(e) {
       netPL: Math.round((plRevenue + plCosts) * 100) / 100
     };
 
+    // NEW P&L cards data: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order"
+    // Round per-platform/company values
+    for (var rp in plRevenueByPlatform) { plRevenueByPlatform[rp].value = Math.round(plRevenueByPlatform[rp].value * 100) / 100; }
+    for (var cp in plCOPByPlatform) { plCOPByPlatform[cp].value = Math.round(plCOPByPlatform[cp].value * 100) / 100; }
+    for (var rc in plRevenueByCompany) { plRevenueByCompany[rc].value = Math.round(plRevenueByCompany[rc].value * 100) / 100; }
+    for (var cc in plCOPByCompany) { plCOPByCompany[cc].value = Math.round(plCOPByCompany[cc].value * 100) / 100; }
+
+    var plCards = {
+      revenue: Math.round(plCardRevenue * 100) / 100,
+      cop: Math.round(plCOP * 100) / 100,
+      revenueByPlatform: plRevenueByPlatform,
+      copByPlatform: plCOPByPlatform,
+      revenueByCompany: plRevenueByCompany,
+      copByCompany: plCOPByCompany
+    };
+
     // Sort months in calendar order for dropdown
     var monthOrder = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     var sortedMonths = [];
@@ -866,6 +906,7 @@ function doGet(e) {
       byType2: byType2,
       byMonth: byMonth,
       plBreakdown: plBreakdown,
+      plCards: plCards,
       platforms: Object.keys(byPlatform).sort(),
       companies: Object.keys(byCompany).sort(),
       types: Object.keys(byType).sort(),
