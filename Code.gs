@@ -238,7 +238,7 @@ function vlookupSKU() {
 // S = SUMIF(A:A, A_value, L:L) — sum of AMOUNT for all rows with same TOTAL
 // T = R value (VLOOKUP AQ) shown ONLY when: multiple entries for same A, no RETURN in G, first ORDER row only
 // U = S value (SUMIF) shown with priority: if RETURN exists → first RETURN row; else first ORDER row; only when multiple entries
-// W = S value on 1st qualifying entry per unique A; rows with G=Order/Return/Shipping Service → always blank, totally ignored
+// V = S value on 1st qualifying entry per unique A; rows with G=Order/Return/Shipping Service → always blank, totally ignored
 
 function computeFormulas() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -329,7 +329,7 @@ function computeFormulas() {
     }
   }
 
-  // === COLUMN W (col 23): S value on 1st qualifying entry per unique A ===
+  // === COLUMN V (col 22): S value on 1st qualifying entry per unique A ===
   // RULES:
   // 1. Rows where G = ORDER, RETURN, or SHIPPING SERVICE → W = blank (totally ignored)
   // 2. Among remaining rows, for each unique A value → W = S value on 1st entry only, rest blank
@@ -357,11 +357,11 @@ function computeFormulas() {
     }
   }
 
-  // Write S(19), T(20), U(21), W(23)
+  // Write S(19), T(20), U(21), V(22)
   ms.getRange(2, 19, numRows, 1).setValues(outS);
   ms.getRange(2, 20, numRows, 1).setValues(outT);
   ms.getRange(2, 21, numRows, 1).setValues(outU);
-  ms.getRange(2, 23, numRows, 1).setValues(outW);
+  ms.getRange(2, 22, numRows, 1).setValues(outW);
 }
 
 // ===================== FAST READ (Sheets API batchGet) =====================
