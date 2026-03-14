@@ -233,12 +233,12 @@ function vlookupSKU() {
   SpreadsheetApp.getUi().alert('VLOOKUP Done!\nRows checked: ' + keys.length + '\nMatched: ' + matched);
 }
 
-// ===================== COMPUTE FORMULAS (S, T, U, V) =====================
+// ===================== COMPUTE FORMULAS (S, T, U, W) =====================
 // R = AQ from VLOOKUP (untouched)
 // S = SUMIF(A:A, A_value, L:L) — sum of AMOUNT for all rows with same TOTAL
 // T = R value (VLOOKUP AQ) shown ONLY when: multiple entries for same A, no RETURN in G, first ORDER row only
 // U = S value (SUMIF) shown with priority: if RETURN exists → first RETURN row; else first ORDER row; only when multiple entries
-// V = (pending — user will define)
+// W = S value on 1st qualifying entry per unique A; rows with G=Order/Return/Shipping Service → always blank, totally ignored
 
 function computeFormulas() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -329,11 +329,39 @@ function computeFormulas() {
     }
   }
 
-  // Write S(19), T(20), U(21)
+  // === COLUMN W (col 23): S value on 1st qualifying entry per unique A ===
+  // RULES:
+  // 1. Rows where G = ORDER, RETURN, or SHIPPING SERVICE → W = blank (totally ignored)
+  // 2. Among remaining rows, for each unique A value → W = S value on 1st entry only, rest blank
+  var EXCLUDED_TYPES_W = {'ORDER':1, 'RETURN':1, 'SHIPPING SERVICE':1};
+  var firstQualifyingRow = {};  // A value → first row index where G is NOT in excluded types
+
+  for (var i = 0; i < numRows; i++) {
+    var a = String(dataA[i][0]).trim().toUpperCase();
+    if (!a) continue;
+    var g = String(dataG[i][0]).trim().toUpperCase();
+    if (EXCLUDED_TYPES_W[g]) continue;  // totally ignore these
+    if (firstQualifyingRow[a] === undefined) firstQualifyingRow[a] = i;
+  }
+
+  var outW = [];
+  for (var i = 0; i < numRows; i++) {
+    var a = String(dataA[i][0]).trim().toUpperCase();
+    if (!a) { outW.push(['']); continue; }
+    var g = String(dataG[i][0]).trim().toUpperCase();
+    if (EXCLUDED_TYPES_W[g]) { outW.push(['']); continue; }  // excluded type → blank
+    if (firstQualifyingRow[a] === i) {
+      outW.push([outS[i][0]]);  // 1st qualifying entry → show S value
+    } else {
+      outW.push(['']);  // not 1st → blank
+    }
+  }
+
+  // Write S(19), T(20), U(21), W(23)
   ms.getRange(2, 19, numRows, 1).setValues(outS);
   ms.getRange(2, 20, numRows, 1).setValues(outT);
   ms.getRange(2, 21, numRows, 1).setValues(outU);
-  // V(22) — not yet defined, leaving untouched
+  ms.getRange(2, 23, numRows, 1).setValues(outW);
 }
 
 // ===================== FAST READ (Sheets API batchGet) =====================
