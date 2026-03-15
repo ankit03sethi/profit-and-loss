@@ -380,8 +380,10 @@ function typeDrillToPlatform(plat){
 function renderTypeDrillCompanies(){
   var td=DATA.typeDetail||{};
   var tData=td[PL_DM.typeName];
-  if(!tData||!tData.byCompany||!Object.keys(tData.byCompany).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
-  var byComp=tData.byCompany;
+  // Use nested byCompany under selected platform (3rd step filtered by platform)
+  var platData=tData&&tData.byPlatform?tData.byPlatform[PL_DM.platform]:null;
+  var byComp=platData&&platData.byCompany?platData.byCompany:null;
+  if(!byComp||!Object.keys(byComp).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
   var clr=getTypeDrillColor(PL_DM.typeName);
   var keys=Object.keys(byComp).sort(function(a,b){return Math.abs(byComp[b].value)-Math.abs(byComp[a].value);});
   var total=0;for(var i=0;i<keys.length;i++)total+=byComp[keys[i]].value;
