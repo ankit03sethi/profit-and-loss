@@ -218,33 +218,48 @@ function fmtPct(n){return (n||0).toFixed(1)+'%';}
 function fmtDec(n){return (n||0).toFixed(2);}
 function destroyChart(id){if(_charts[id]){_charts[id].destroy();delete _charts[id];}}
 
-// ===== LOAD DATA =====
+// ===== MONTH SELECTION (single month OR All) =====
+var _activeMonth='ALL'; // 'ALL' or a specific month name like 'January'
+
 function getSelectedMonths(){
-  var btns=document.querySelectorAll('#monthBtns .mbtn.active');
-  var months=[];
-  for(var i=0;i<btns.length;i++)months.push(btns[i].getAttribute('data-month'));
-  return months;
-}
-function toggleAllMonths(){
-  var btns=document.querySelectorAll('#monthBtns .mbtn');
-  var allBtn=document.querySelector('#monthBtns .mbtn-all');
-  var allActive=allBtn&&allBtn.classList.contains('active');
-  if(allActive){
-    allBtn.classList.remove('active');
-    for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');
-  }else{
-    allBtn.classList.add('active');
-    for(var i=0;i<btns.length;i++)btns[i].classList.add('active');
+  if(_activeMonth==='ALL'){
+    // Return all available month buttons
+    var btns=document.querySelectorAll('#monthBtns .mbtn');
+    var months=[];
+    for(var i=0;i<btns.length;i++)months.push(btns[i].getAttribute('data-month'));
+    return months;
   }
+  return [_activeMonth];
+}
+function selectMonth(monthName){
+  _activeMonth=monthName;
+  _refreshMonthBtnStyles();
   applyFilter();
 }
-function updateMonthAllBtn(){
+function toggleAllMonths(){
+  if(_activeMonth==='ALL'){
+    // Deselect All → pick latest month
+    var firstBtn=document.querySelector('#monthBtns .mbtn');
+    if(firstBtn) _activeMonth=firstBtn.getAttribute('data-month');
+    else _activeMonth='ALL';
+  } else {
+    _activeMonth='ALL';
+  }
+  _refreshMonthBtnStyles();
+  applyFilter();
+}
+function _refreshMonthBtnStyles(){
   var btns=document.querySelectorAll('#monthBtns .mbtn');
-  var activeCnt=document.querySelectorAll('#monthBtns .mbtn.active').length;
   var allBtn=document.querySelector('#monthBtns .mbtn-all');
-  if(allBtn){
-    if(activeCnt===btns.length)allBtn.classList.add('active');
-    else allBtn.classList.remove('active');
+  if(_activeMonth==='ALL'){
+    if(allBtn)allBtn.classList.add('active');
+    for(var i=0;i<btns.length;i++)btns[i].classList.add('active');
+  } else {
+    if(allBtn)allBtn.classList.remove('active');
+    for(var i=0;i<btns.length;i++){
+      if(btns[i].getAttribute('data-month')===_activeMonth)btns[i].classList.add('active');
+      else btns[i].classList.remove('active');
+    }
   }
 }
 function loadData(){
@@ -304,28 +319,24 @@ function buildMonthButtons(monthsList){
   }
   uniqueMonths.sort(function(a,b){return getMonthCalIndex(b)-getMonthCalIndex(a);});
   var mBox=document.getElementById('monthBtns');
-  // Remember previously selected months
-  var prevActive={};
-  var prevBtns=mBox.querySelectorAll('.mbtn.active');
-  for(var p=0;p<prevBtns.length;p++)prevActive[prevBtns[p].getAttribute('data-month')]=1;
   mBox.innerHTML='';
   var allBtn=document.createElement('button');
   allBtn.className='mbtn-all';
   allBtn.textContent='All';
   allBtn.onclick=function(){toggleAllMonths();};
   mBox.appendChild(allBtn);
-  var anyRestored=false;
   for(var i=0;i<uniqueMonths.length;i++){
     var btn=document.createElement('button');
     btn.className='mbtn';
     btn.textContent=uniqueMonths[i].substring(0,3);
     btn.setAttribute('data-month',uniqueMonths[i]);
     btn.title=uniqueMonths[i];
-    if(prevActive[uniqueMonths[i]]){btn.classList.add('active');anyRestored=true;}
-    btn.onclick=function(){this.classList.toggle('active');updateMonthAllBtn();applyFilter();};
+    btn.onclick=function(){selectMonth(this.getAttribute('data-month'));};
     mBox.appendChild(btn);
   }
-  return {months:uniqueMonths, anyRestored:anyRestored};
+  // Apply styles from _activeMonth variable (not from DOM)
+  _refreshMonthBtnStyles();
+  return uniqueMonths;
 }
 
 function populateFilters(d){
@@ -345,7 +356,14 @@ function populateFilters(d){
   for(var i=0;i<uniqueYears.length;i++){
     ySel.innerHTML+='<option value="'+uniqueYears[i]+'">'+uniqueYears[i]+'</option>';
   }
-  if(curY)ySel.value=curY;
+  if(curY){ySel.value=curY;}
+  else if(_firstLoad){
+    // Default to current year on first load
+    var nowYear=String(new Date().getFullYear());
+    for(var yi=0;yi<uniqueYears.length;yi++){
+      if(String(uniqueYears[yi])===nowYear){ySel.value=nowYear;break;}
+    }
+  }
 
   // Determine which months to show based on year selection
   var selYear=ySel.value;
@@ -354,27 +372,17 @@ function populateFilters(d){
     monthsToShow=_monthsByYear[selYear];
   }
 
-  var buildResult=buildMonthButtons(monthsToShow);
-  var uniqueMonths=buildResult.months;
-  var anyRestored=buildResult.anyRestored;
+  var uniqueMonths=buildMonthButtons(monthsToShow);
 
   if(_firstLoad){
     _firstLoad=false;
-    // Auto-select latest month on first load
+    // Default: select latest month on first load
     if(uniqueMonths.length>0){
-      var firstBtn=document.querySelector('#monthBtns .mbtn');
-      if(firstBtn)firstBtn.classList.add('active');
+      _activeMonth=uniqueMonths[0];
+      _refreshMonthBtnStyles();
       applyFilter();
       return;
     }
-  } else {
-    // If previously active months were restored by buildMonthButtons, keep them
-    // Otherwise select the latest (first) month button
-    if(!anyRestored){
-      var btns=document.querySelectorAll('#monthBtns .mbtn');
-      if(btns.length>0){btns[0].classList.add('active');}
-    }
-    updateMonthAllBtn();
   }
 }
 
@@ -389,16 +397,16 @@ function onYearChange(){
   if(selYear&&_monthsByYear[selYear]){
     monthsToShow=_monthsByYear[selYear];
   } else {
-    // All years - show all months from DATA
     monthsToShow=DATA.availableMonths||[];
   }
-  var buildResult=buildMonthButtons(monthsToShow);
-  // Auto-select latest month if none restored
-  if(!buildResult.anyRestored&&buildResult.months.length>0){
-    var firstBtn=document.querySelector('#monthBtns .mbtn');
-    if(firstBtn)firstBtn.classList.add('active');
+  var uniqueMonths=buildMonthButtons(monthsToShow);
+  // If current _activeMonth is not in the new list, pick latest
+  if(_activeMonth!=='ALL'){
+    var found=false;
+    for(var i=0;i<uniqueMonths.length;i++){if(uniqueMonths[i]===_activeMonth){found=true;break;}}
+    if(!found&&uniqueMonths.length>0){_activeMonth=uniqueMonths[0];}
   }
-  updateMonthAllBtn();
+  _refreshMonthBtnStyles();
   applyFilter();
 }
 
