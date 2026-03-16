@@ -367,9 +367,9 @@ function renderPLCards(){
     var aName=allTypes[ai];
     if(TYPE_CARD_EXCLUDE[aName])continue;
     if(TYPE_CARD_ORDER.indexOf(aName)!==-1)continue;
+    if(aName.toUpperCase()==='TRANSFER')continue;
     var aData=td[aName];
     var aTotal=aData?aData.total:0;
-    if(aName.toUpperCase()==='TRANSFER') aTotal=Math.abs(aTotal);
     h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\''+aName.replace(/'/g,"\\'")+'\')">';
     h+='<div class="lb">'+aName.toUpperCase()+'</div>';
     h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(aTotal)+'</div>';
@@ -396,13 +396,17 @@ function renderPLCards(){
     var eTotal2=eData2?eData2.total:0;
     reqTransfer-=Math.abs(eTotal2);
   }
-  var rtCls=reqTransfer>=0?'profit':'loss';
-  var rtSign=reqTransfer>=0?'+':'';
-  var rtColor=reqTransfer>=0?'#39ff14':'#ff003c';
-  var rtBorder=reqTransfer>=0?'#39ff14':'#ff003c';
-  h+='<div class="cd" style="border-left-color:'+rtBorder+';background:#0a1e40">';
-  h+='<div class="lb" style="color:#fff;font-weight:700">REQUIRED TRANSFER</div>';
-  h+='<div class="vl" style="color:'+rtColor+';font-size:26px">'+rtSign+fmtCur(reqTransfer)+'</div>';
+  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7">';
+  h+='<div class="lb">REQUIRED TRANSFER</div>';
+  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(reqTransfer)+'</div>';
+  h+='</div>';
+
+  // Transfer card (moved here, after Required Transfer)
+  var trDataCard=td['Transfer'];
+  var trTotal=trDataCard?Math.abs(trDataCard.total):0;
+  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\'Transfer\')">';
+  h+='<div class="lb">TRANSFER</div>';
+  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(trTotal)+'</div>';
   h+='</div>';
 
   // Net Profit card: Revenue - COP - Returns - all type cards except Transfer
@@ -424,13 +428,9 @@ function renderPLCards(){
     var eTotal=eData?eData.total:0;
     netProfit-=Math.abs(eTotal);
   }
-  var npCls=netProfit>=0?'profit':'loss';
-  var npSign=netProfit>=0?'+':'';
-  var npColor=netProfit>=0?'#39ff14':'#ff003c';
-  var npBorder=netProfit>=0?'#39ff14':'#ff003c';
-  h+='<div class="cd" style="border-left-color:'+npBorder+';background:#0a1e40">';
-  h+='<div class="lb" style="color:#fff;font-weight:700">NET PROFIT</div>';
-  h+='<div class="vl" style="color:'+npColor+';font-size:26px">'+npSign+fmtCur(netProfit)+'</div>';
+  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7">';
+  h+='<div class="lb">NET PROFIT</div>';
+  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(netProfit)+'</div>';
   h+='</div>';
 
   document.getElementById('plCards').innerHTML=h;
