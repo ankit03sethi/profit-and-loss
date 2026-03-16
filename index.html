@@ -96,7 +96,7 @@ tr:hover td:first-child{background:#1f2b47}
 .flt-row input,.flt-row select{background:#0a0f1e;color:#eee;border:1px solid #333;border-radius:4px;padding:2px 4px;font-size:10px;width:100%}
 .flt-row input:focus,.flt-row select:focus{border-color:#4fc3f7;outline:none}
 /* Unit count inline */
-.unit-cnt{display:block;font-size:10px;color:#666;margin-top:1px;font-weight:400}
+.unit-cnt{display:block;font-size:10px;color:#666;margin-top:1px;font-weight:700}
 /* SKU search */
 .sku-search{background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 10px;font-size:12px;width:100%;margin-bottom:8px}
 .sku-search:focus{border-color:#4fc3f7;outline:none}
@@ -611,6 +611,7 @@ function _applyColFilter(tableId){
       var dv=rows[r].cells[c]?rows[r].cells[c].getAttribute('data-v'):'';
       if(sel){
         var mode=sel.value;
+        if(mode==='h2l'||mode==='l2h')continue; // sorting handled after filter
         var nf=parseFloat(fv),nd=parseFloat(dv)||0;
         if(isNaN(nf))continue;
         if(mode==='gte'&&nd<nf)show=false;
@@ -621,12 +622,31 @@ function _applyColFilter(tableId){
     }
     rows[r].style.display=show?'':'none';
   }
+  // Handle h2l/l2h sorting from filter dropdowns
+  for(var c2=0;c2<cells.length;c2++){
+    var sel2=cells[c2].querySelector('select');
+    if(!sel2)continue;
+    var mode2=sel2.value;
+    if(mode2==='h2l'||mode2==='l2h'){
+      var visRows=[];
+      for(var r2=0;r2<rows.length;r2++){if(rows[r2].style.display!=='none')visRows.push(rows[r2]);}
+      visRows.sort(function(a,b){
+        var av=parseFloat(a.cells[c2]?a.cells[c2].getAttribute('data-v'):0)||0;
+        var bv=parseFloat(b.cells[c2]?b.cells[c2].getAttribute('data-v'):0)||0;
+        return mode2==='h2l'?bv-av:av-bv;
+      });
+      for(var r3=0;r3<visRows.length;r3++)tbody.appendChild(visRows[r3]);
+      var totRow=tbody.querySelector('.tot-row');
+      if(totRow)tbody.appendChild(totRow);
+      break;
+    }
+  }
 }
 
 // Helper: build cell with value + unit count inline
 function _vc(val,cnt,color,prefix){
   prefix=prefix||'';
-  return '<span style="color:'+color+';font-weight:600">'+prefix+fmtCur(val)+'</span><span class="unit-cnt">('+fmt(cnt)+')</span>';
+  return '<span style="color:'+color+';font-weight:600">'+prefix+fmtCur(val)+'</span><span class="unit-cnt">'+fmt(cnt)+'</span>';
 }
 function _vcPct(val,cls){
   return '<span class="'+cls+'" style="font-weight:600">'+fmtPct(val)+'</span>';
@@ -652,7 +672,7 @@ function _renderFullOverview(data,label,tableId){
   // Filter row
   h+='<tr class="flt-row"><td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';
   for(var ci=0;ci<cols.length;ci++){
-    h+='<td><div style="display:flex;gap:2px"><select style="width:40px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';
+    h+='<td><div style="display:flex;gap:2px"><select style="width:55px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option><option value="h2l">High&rarr;Low</option><option value="l2h">Low&rarr;High</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';
   }
   h+='</tr>';
   var totR=0,totC=0,totRet=0,totAd=0,totTr=0,totP=0,tRevC=0,tRetC=0;
@@ -685,9 +705,9 @@ function _renderFullOverview(data,label,tableId){
   var tpCls=totP>=0?'profit':'loss';
   h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
   h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40">TOTAL</td>';
-  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
-  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
-  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">('+fmt(tRetC)+')</span></td>';
+  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
+  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
+  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">'+fmt(tRetC)+'</span></td>';
   h+='<td data-v="'+totAd+'"><span style="color:#bf00ff;font-weight:700">-'+fmtCur(totAd)+'</span></td>';
   h+='<td data-v="'+totTr+'"><span style="color:#4fc3f7;font-weight:700">'+fmtCur(totTr)+'</span></td>';
   h+='<td data-v="'+totP+'">'+_vcProfit(totP,totNet)+'</td>';
@@ -716,7 +736,7 @@ function _renderLimitedOverview(data,label,tableId,showCount){
   // Filter row
   h+='<tr class="flt-row"><td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';
   for(var ci=0;ci<cols.length;ci++){
-    h+='<td><div style="display:flex;gap:2px"><select style="width:40px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';
+    h+='<td><div style="display:flex;gap:2px"><select style="width:55px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option><option value="h2l">High&rarr;Low</option><option value="l2h">Low&rarr;High</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';
   }
   h+='</tr>';
   var totR=0,totC=0,totRet=0,totP=0,tRevC=0,tRetC=0;
@@ -750,9 +770,9 @@ function _renderLimitedOverview(data,label,tableId,showCount){
   var tpCls=totP>=0?'profit':'loss';
   h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
   h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40">TOTAL</td>';
-  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
-  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
-  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">('+fmt(tRetC)+')</span></td>';
+  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
+  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
+  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">'+fmt(tRetC)+'</span></td>';
   h+='<td data-v="'+totP+'">'+_vcProfit(totP,totNet)+'</td>';
   h+='<td data-v="'+totRevPct+'" class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
   h+='<td data-v="'+totCopPct+'" class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
@@ -789,7 +809,7 @@ function _renderSKUOverview(data,tableId){
   h+='<tr class="flt-row">';
   for(var ci=0;ci<cols.length;ci++){
     if(ci<3){h+='<td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';}
-    else{h+='<td><div style="display:flex;gap:2px"><select style="width:40px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';}
+    else{h+='<td><div style="display:flex;gap:2px"><select style="width:55px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option><option value="h2l">High&rarr;Low</option><option value="l2h">Low&rarr;High</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';}
   }
   h+='</tr>';
   var totR=0,totC=0,totRet=0,totP=0,tRevC=0,tRetC=0;
@@ -825,9 +845,9 @@ function _renderSKUOverview(data,tableId){
   var tpCls=totP>=0?'profit':'loss';
   h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
   h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40" colspan="3">TOTAL ('+keys.length+' SKUs)</td>';
-  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
-  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
-  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">('+fmt(tRetC)+')</span></td>';
+  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
+  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
+  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">'+fmt(tRetC)+'</span></td>';
   h+='<td data-v="'+totP+'">'+_vcProfit(totP,totNet)+'</td>';
   h+='<td data-v="'+totRevPct+'" class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
   h+='<td data-v="'+totCopPct+'" class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
