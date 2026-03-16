@@ -251,19 +251,31 @@ function populateFilters(d){
   var months=d.availableMonths||[];
   var years=d.availableYears||[];
 
+  // Deduplicate months case-insensitively, keep first occurrence
+  var mSeen={},uniqueMonths=[];
+  for(var i=0;i<months.length;i++){
+    var mKey=String(months[i]).toLowerCase();
+    if(!mSeen[mKey]){mSeen[mKey]=1;uniqueMonths.push(months[i]);}
+  }
   var mSel=document.getElementById('fMonth');
   var curM=mSel.value;
   mSel.innerHTML='<option value="">All Months</option>';
-  for(var i=0;i<months.length;i++){
-    mSel.innerHTML+='<option value="'+months[i]+'">'+months[i]+'</option>';
+  for(var i=0;i<uniqueMonths.length;i++){
+    mSel.innerHTML+='<option value="'+uniqueMonths[i]+'">'+uniqueMonths[i]+'</option>';
   }
   if(curM)mSel.value=curM;
 
+  // Deduplicate years
+  var ySeen={},uniqueYears=[];
+  for(var i=0;i<years.length;i++){
+    var yKey=String(years[i]).toLowerCase();
+    if(!ySeen[yKey]){ySeen[yKey]=1;uniqueYears.push(years[i]);}
+  }
   var ySel=document.getElementById('fYear');
   var curY=ySel.value;
   ySel.innerHTML='<option value="">All Years</option>';
-  for(var i=0;i<years.length;i++){
-    ySel.innerHTML+='<option value="'+years[i]+'">'+years[i]+'</option>';
+  for(var i=0;i<uniqueYears.length;i++){
+    ySel.innerHTML+='<option value="'+uniqueYears[i]+'">'+uniqueYears[i]+'</option>';
   }
   if(curY)ySel.value=curY;
 }
@@ -357,6 +369,37 @@ function renderPLCards(){
     h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(aTotal)+'</div>';
     h+='</div>';
   }
+
+  // Net Profit card: Revenue - COP - Returns - all type cards except Transfer
+  var netProfit=revenue - Math.abs(cop) - Math.abs(returns);
+  var PROFIT_ADD={'Adjustment':1,'Reimbursements':1};
+  for(var ni=0;ni<TYPE_CARD_ORDER.length;ni++){
+    var nName=TYPE_CARD_ORDER[ni];
+    if(nName.toUpperCase()==='TRANSFER')continue;
+    var nData=td[nName];
+    var nTotal=nData?nData.total:0;
+    if(PROFIT_ADD[nName]){netProfit+=Math.abs(nTotal);}
+    else{netProfit-=Math.abs(nTotal);}
+  }
+  // Also include any extra type cards (not in TYPE_CARD_ORDER, not excluded, not Transfer)
+  for(var ei=0;ei<allTypes.length;ei++){
+    var eName=allTypes[ei];
+    if(TYPE_CARD_EXCLUDE[eName])continue;
+    if(TYPE_CARD_ORDER.indexOf(eName)!==-1)continue;
+    if(eName.toUpperCase()==='TRANSFER')continue;
+    var eData=td[eName];
+    var eTotal=eData?eData.total:0;
+    netProfit-=Math.abs(eTotal);
+  }
+  var npCls=netProfit>=0?'profit':'loss';
+  var npSign=netProfit>=0?'+':'';
+  var npColor=netProfit>=0?'#39ff14':'#ff003c';
+  var npBorder=netProfit>=0?'#39ff14':'#ff003c';
+  h+='<div class="cd" style="border-left-color:'+npBorder+';background:#0a1e40">';
+  h+='<div class="lb" style="color:#fff;font-weight:700">NET PROFIT</div>';
+  h+='<div class="vl" style="color:'+npColor+';font-size:26px">'+npSign+fmtCur(netProfit)+'</div>';
+  h+='<div style="font-size:9px;color:#888;margin-top:4px">Revenue - COP - Returns - Advt - WH - VAS - Aff - Charges + Adj + Reimb</div>';
+  h+='</div>';
 
   document.getElementById('plCards').innerHTML=h;
 }
