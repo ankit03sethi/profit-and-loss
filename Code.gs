@@ -777,8 +777,8 @@ function doGet(e) {
     var filterMonth = (e && e.parameter && e.parameter.month) ? String(e.parameter.month).trim().toLowerCase() : '';
     var filterYear = (e && e.parameter && e.parameter.year) ? String(e.parameter.year).trim() : '';
 
-    // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT, T(col20), U(col21), O=Category, P=SubCategory
-    var colRanges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L','T2:T','U2:U','O2:O','P2:P'];
+    // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT, T(col20), U(col21), O=Category, P=SubCategory, Q=Product
+    var colRanges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L','T2:T','U2:U','O2:O','P2:P','Q2:Q'];
     var ranges = [];
     for (var i = 0; i < colRanges.length; i++) ranges.push("'" + tab + "'!" + colRanges[i]);
     var res = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: ranges, valueRenderOption: 'UNFORMATTED_VALUE'});
@@ -792,7 +792,7 @@ function doGet(e) {
 
     var cols = [];
     for (var c = 0; c < vr.length; c++) cols.push(vr[c].values || []);
-    // cols: 0=total, 1=sno, 2=year, 3=month, 4=platform, 5=company, 6=type, 7=type2, 8=orderId, 9=sku, 10=qty, 11=amount, 12=T(col20), 13=U(col21), 14=category(O), 15=subCategory(P)
+    // cols: 0=total, 1=sno, 2=year, 3=month, 4=platform, 5=company, 6=type, 7=type2, 8=orderId, 9=sku, 10=qty, 11=amount, 12=T(col20), 13=U(col21), 14=category(O), 15=subCategory(P), 16=product(Q)
 
     var summary = {totalEntries:0, totalQty:0, totalAmount:0};
     var byPlatform = {}, byCompany = {}, byType = {}, byType2 = {}, byMonthMap = {}, dailyMap = {};
@@ -801,7 +801,7 @@ function doGet(e) {
     var plRevenueByPlatform = {}, plRevenueByCompany = {};
     var plCOPByPlatform = {}, plCOPByCompany = {};
     var plReturnsByPlatform = {}, plReturnsByCompany = {};
-    var byCategory = {}, bySubCategory = {};
+    var byCategory = {}, bySubCategory = {}, byProduct = {}, bySKU = {};
     var seenEntries = {};
 
     // Collect ALL unique months/years (before filtering) for dropdown population
@@ -831,6 +831,8 @@ function doGet(e) {
       var colU = _toNum(r < cols[13].length && cols[13][r].length > 0 ? cols[13][r][0] : 0);
       var category = String(r < cols[14].length && cols[14][r].length > 0 ? cols[14][r][0] : '').trim() || 'Unknown';
       var subCategory = String(r < cols[15].length && cols[15][r].length > 0 ? cols[15][r][0] : '').trim() || 'Unknown';
+      var product = String(r < cols[16].length && cols[16][r].length > 0 ? cols[16][r][0] : '').trim() || 'Unknown';
+      var sku = String(r < cols[9].length && cols[9][r].length > 0 ? cols[9][r][0] : '').trim() || 'Unknown';
 
       // Convert Transfer values to positive
       var typeUpper = type.toUpperCase();
@@ -868,12 +870,18 @@ function doGet(e) {
         plCardRevenue += colU;
         plCOP += colT;
         // Per-platform Revenue/COP drill-down
-        if (!plRevenueByPlatform[platform]) plRevenueByPlatform[platform] = {value:0, entries:0};
+        if (!plRevenueByPlatform[platform]) plRevenueByPlatform[platform] = {value:0, entries:0, companies:{}};
         plRevenueByPlatform[platform].value += colU;
         plRevenueByPlatform[platform].entries++;
-        if (!plCOPByPlatform[platform]) plCOPByPlatform[platform] = {value:0, entries:0};
+        if (!plRevenueByPlatform[platform].companies[company]) plRevenueByPlatform[platform].companies[company] = {value:0, entries:0};
+        plRevenueByPlatform[platform].companies[company].value += colU;
+        plRevenueByPlatform[platform].companies[company].entries++;
+        if (!plCOPByPlatform[platform]) plCOPByPlatform[platform] = {value:0, entries:0, companies:{}};
         plCOPByPlatform[platform].value += colT;
         plCOPByPlatform[platform].entries++;
+        if (!plCOPByPlatform[platform].companies[company]) plCOPByPlatform[platform].companies[company] = {value:0, entries:0};
+        plCOPByPlatform[platform].companies[company].value += colT;
+        plCOPByPlatform[platform].companies[company].entries++;
         // Per-company Revenue/COP drill-down
         if (!plRevenueByCompany[company]) plRevenueByCompany[company] = {value:0, entries:0};
         plRevenueByCompany[company].value += colU;
@@ -885,29 +893,52 @@ function doGet(e) {
       if (typeUpper === 'RETURN') {
         plReturns += colU;
         // Per-platform Returns drill-down
-        if (!plReturnsByPlatform[platform]) plReturnsByPlatform[platform] = {value:0, entries:0};
+        if (!plReturnsByPlatform[platform]) plReturnsByPlatform[platform] = {value:0, entries:0, companies:{}};
         plReturnsByPlatform[platform].value += colU;
         plReturnsByPlatform[platform].entries++;
+        if (!plReturnsByPlatform[platform].companies[company]) plReturnsByPlatform[platform].companies[company] = {value:0, entries:0};
+        plReturnsByPlatform[platform].companies[company].value += colU;
+        plReturnsByPlatform[platform].companies[company].entries++;
         // Per-company Returns drill-down
         if (!plReturnsByCompany[company]) plReturnsByCompany[company] = {value:0, entries:0};
         plReturnsByCompany[company].value += colU;
         plReturnsByCompany[company].entries++;
       }
 
-      // byCategory & bySubCategory: Revenue/COP/Returns per category and subCategory
+      // byCategory, bySubCategory, byProduct, bySKU: Revenue/COP/Returns + counts
       if (typeUpper === 'ORDER') {
-        if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0};
+        if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
         byCategory[category].revenue += colU;
         byCategory[category].cop += colT;
-        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0};
+        byCategory[category].revCount++;
+        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
         bySubCategory[subCategory].revenue += colU;
         bySubCategory[subCategory].cop += colT;
+        bySubCategory[subCategory].revCount++;
+        if (!byProduct[product]) byProduct[product] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
+        byProduct[product].revenue += colU;
+        byProduct[product].cop += colT;
+        byProduct[product].revCount++;
+        var skuKey = platform + ' | ' + company + ' | ' + sku;
+        if (!bySKU[skuKey]) bySKU[skuKey] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0, platform:platform, company:company, sku:sku, category:category, product:product};
+        bySKU[skuKey].revenue += colU;
+        bySKU[skuKey].cop += colT;
+        bySKU[skuKey].revCount++;
       }
       if (typeUpper === 'RETURN') {
-        if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0};
+        if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
         byCategory[category].returns += colU;
-        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0};
+        byCategory[category].retCount++;
+        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
         bySubCategory[subCategory].returns += colU;
+        bySubCategory[subCategory].retCount++;
+        if (!byProduct[product]) byProduct[product] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
+        byProduct[product].returns += colU;
+        byProduct[product].retCount++;
+        var skuKey2 = platform + ' | ' + company + ' | ' + sku;
+        if (!bySKU[skuKey2]) bySKU[skuKey2] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0, platform:platform, company:company, sku:sku, category:category, product:product};
+        bySKU[skuKey2].returns += colU;
+        bySKU[skuKey2].retCount++;
       }
 
       // byPlatform
@@ -968,6 +999,8 @@ function doGet(e) {
     // Round byCategory/bySubCategory
     for (var k in byCategory) { byCategory[k].revenue = Math.round(byCategory[k].revenue * 100) / 100; byCategory[k].cop = Math.round(byCategory[k].cop * 100) / 100; byCategory[k].returns = Math.round(byCategory[k].returns * 100) / 100; }
     for (var k in bySubCategory) { bySubCategory[k].revenue = Math.round(bySubCategory[k].revenue * 100) / 100; bySubCategory[k].cop = Math.round(bySubCategory[k].cop * 100) / 100; bySubCategory[k].returns = Math.round(bySubCategory[k].returns * 100) / 100; }
+    for (var k in byProduct) { byProduct[k].revenue = Math.round(byProduct[k].revenue * 100) / 100; byProduct[k].cop = Math.round(byProduct[k].cop * 100) / 100; byProduct[k].returns = Math.round(byProduct[k].returns * 100) / 100; }
+    for (var k in bySKU) { bySKU[k].revenue = Math.round(bySKU[k].revenue * 100) / 100; bySKU[k].cop = Math.round(bySKU[k].cop * 100) / 100; bySKU[k].returns = Math.round(bySKU[k].returns * 100) / 100; }
     // Round typeDetail
     for (var td in typeDetail) {
       typeDetail[td].total = Math.round(typeDetail[td].total * 100) / 100;
@@ -1040,6 +1073,8 @@ function doGet(e) {
       typeDetail: typeDetail,
       byCategory: byCategory,
       bySubCategory: bySubCategory,
+      byProduct: byProduct,
+      bySKU: bySKU,
       platforms: Object.keys(byPlatform).sort(),
       companies: Object.keys(byCompany).sort(),
       types: Object.keys(byType).sort(),

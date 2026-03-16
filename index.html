@@ -166,6 +166,8 @@ tr:hover td{background:#1f2b47}
 <button class="acc-btn" id="btn-ovSKU" onclick="toggleAcc('ovSKU')">SKU OVERVIEW <span id="arr-ovSKU">&#9660;</span></button>
 <div class="acc-content" id="acc-ovSKU">
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
+    <select id="skuFilterPlat" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Platforms</option></select>
+    <select id="skuFilterComp" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Companies</option></select>
     <select id="skuFilterCat" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Categories</option></select>
     <select id="skuFilterProd" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Products</option></select>
     <select id="skuFilterSKU" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All SKUs</option></select>
@@ -592,9 +594,21 @@ function plDrillToPlatform(plat){
 
 function renderPLDrillCompanies(){
   var pc=DATA.plCards||{};
-  var byComp=PL_DM.type==='revenue'?pc.revenueByCompany:PL_DM.type==='cop'?pc.copByCompany:pc.returnsByCompany;
+  var allByComp=PL_DM.type==='revenue'?pc.revenueByCompany:PL_DM.type==='cop'?pc.copByCompany:pc.returnsByCompany;
+  var byPlat=PL_DM.type==='revenue'?pc.revenueByPlatform:PL_DM.type==='cop'?pc.copByPlatform:pc.returnsByPlatform;
   var clr=plDrillColor(PL_DM.type);
   var lbl=PL_DM.type==='revenue'?'ORDERS':PL_DM.type==='cop'?'COP':'RETURNS';
+  // Filter companies to only those under selected platform
+  var platCompanies=(byPlat&&byPlat[PL_DM.platform]&&byPlat[PL_DM.platform].companies)?byPlat[PL_DM.platform].companies:{};
+  var byComp={};
+  if(Object.keys(platCompanies).length>0){
+    var cKeys=Object.keys(platCompanies);
+    for(var ci=0;ci<cKeys.length;ci++){
+      byComp[cKeys[ci]]=platCompanies[cKeys[ci]];
+    }
+  } else if(allByComp){
+    byComp=allByComp;
+  }
   if(!byComp||!Object.keys(byComp).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
   var keys=Object.keys(byComp).sort(function(a,b){return Math.abs(byComp[b].value)-Math.abs(byComp[a].value);});
   var total=0;for(var i=0;i<keys.length;i++)total+=byComp[keys[i]].value;
@@ -878,22 +892,30 @@ function _renderLimitedOverview(data,label,tableId,showCount){
 // ===== SKU OVERVIEW (with Platform, Company, Category, Product columns) =====
 function _renderSKUOverview(data,tableId){
   var searchQ=(document.getElementById('skuSearch')?document.getElementById('skuSearch').value:'').trim().toLowerCase();
+  var filterPlat=(document.getElementById('skuFilterPlat')?document.getElementById('skuFilterPlat').value:'');
+  var filterComp=(document.getElementById('skuFilterComp')?document.getElementById('skuFilterComp').value:'');
   var filterCat=(document.getElementById('skuFilterCat')?document.getElementById('skuFilterCat').value:'');
   var filterProd=(document.getElementById('skuFilterProd')?document.getElementById('skuFilterProd').value:'');
   var filterSKU=(document.getElementById('skuFilterSKU')?document.getElementById('skuFilterSKU').value:'');
   var allKeys=Object.keys(data);
   // Populate dropdown options
-  var catSet={},prodSet={},skuSet={};
-  for(var j=0;j<allKeys.length;j++){var dd=data[allKeys[j]];if(dd.category)catSet[dd.category]=1;if(dd.product)prodSet[dd.product]=1;if(dd.sku)skuSet[dd.sku]=1;}
+  var platSet={},compSet={},catSet={},prodSet={},skuSet={};
+  for(var j=0;j<allKeys.length;j++){var dd=data[allKeys[j]];if(dd.platform)platSet[dd.platform]=1;if(dd.company)compSet[dd.company]=1;if(dd.category)catSet[dd.category]=1;if(dd.product)prodSet[dd.product]=1;if(dd.sku)skuSet[dd.sku]=1;}
+  var platEl=document.getElementById('skuFilterPlat');
+  var compEl=document.getElementById('skuFilterComp');
   var catEl=document.getElementById('skuFilterCat');
   var prodEl=document.getElementById('skuFilterProd');
   var skuEl=document.getElementById('skuFilterSKU');
+  if(platEl&&platEl.options.length<=1){var pls=Object.keys(platSet).sort();for(var pli=0;pli<pls.length;pli++){var o=document.createElement('option');o.value=pls[pli];o.textContent=pls[pli];platEl.appendChild(o);}}
+  if(compEl&&compEl.options.length<=1){var cos=Object.keys(compSet).sort();for(var coi=0;coi<cos.length;coi++){var o=document.createElement('option');o.value=cos[coi];o.textContent=cos[coi];compEl.appendChild(o);}}
   if(catEl&&catEl.options.length<=1){var cs=Object.keys(catSet).sort();for(var ci2=0;ci2<cs.length;ci2++){var o=document.createElement('option');o.value=cs[ci2];o.textContent=cs[ci2];catEl.appendChild(o);}}
   if(prodEl&&prodEl.options.length<=1){var ps=Object.keys(prodSet).sort();for(var pi2=0;pi2<ps.length;pi2++){var o=document.createElement('option');o.value=ps[pi2];o.textContent=ps[pi2];prodEl.appendChild(o);}}
   if(skuEl&&skuEl.options.length<=1){var ss=Object.keys(skuSet).sort();for(var si2=0;si2<ss.length;si2++){var o=document.createElement('option');o.value=ss[si2];o.textContent=ss[si2];skuEl.appendChild(o);}}
   var keys=[];
   for(var i=0;i<allKeys.length;i++){
     var d=data[allKeys[i]];
+    if(filterPlat&&(d.platform||'')!==filterPlat)continue;
+    if(filterComp&&(d.company||'')!==filterComp)continue;
     if(filterCat&&(d.category||'')!==filterCat)continue;
     if(filterProd&&(d.product||'')!==filterProd)continue;
     if(filterSKU&&(d.sku||'')!==filterSKU)continue;
