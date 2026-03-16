@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -8,9 +8,9 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#eee;padding:12px;min-height:100vh;overflow-x:hidden}
-.header-row{display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:4px}
+.header-row{display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:4px;padding:0 40px}
 h1{text-align:center;color:#39ff14;font-size:20px;letter-spacing:1px}
-.sub{text-align:center;color:#39ff14;font-size:22px;margin-bottom:12px;letter-spacing:1px;font-weight:700}
+.sub{text-align:center;color:#39ff14;font-size:22px;margin-bottom:12px;letter-spacing:1px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .loading{text-align:center;padding:80px;color:#4fc3f7;font-size:18px}
 .spin{display:inline-block;width:30px;height:30px;border:3px solid #333;border-top:3px solid #4fc3f7;border-radius:50%;animation:sp .8s linear infinite;margin-bottom:10px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -59,7 +59,7 @@ tr:hover td{background:#1f2b47}
 .mbtn-all:hover{background:#4fc3f7;color:#0a1628}
 .mbtn-all.active{background:#4fc3f7;color:#0a1628}
 /* Global search */
-.global-search{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:0}
+.global-search{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:0;z-index:5;flex-shrink:0}
 .global-search .gs-icon{background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center}
 .global-search .gs-icon svg{width:24px;height:24px;fill:none;stroke:#39ff14;stroke-width:2}
 .global-search input{background:#0a0f1e;color:#eee;border:1px solid #39ff14;border-radius:6px;padding:5px 10px;font-size:12px;width:0;opacity:0;transition:width .3s,opacity .3s,padding .3s;overflow:hidden;padding:0}
@@ -108,7 +108,7 @@ tr:hover td{background:#1f2b47}
 .sku-search:focus{border-color:#4fc3f7;outline:none}
 /* Total count badge */
 .cnt-badge{font-size:10px;color:#888;font-weight:400;margin-left:8px}
-@media(max-width:768px){.cards{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.chart-row{grid-template-columns:1fr}.global-search input{width:120px}}
+@media(max-width:768px){.cards{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.chart-row{grid-template-columns:1fr}.global-search input.gs-open{width:120px}.header-row{padding:0 36px}}
 </style>
 </head>
 <body>
@@ -129,7 +129,7 @@ tr:hover td{background:#1f2b47}
 <div class="fbox">
 <div class="frow" style="flex-wrap:wrap;gap:6px;align-items:center">
   <div id="monthBtns" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center"></div>
-  <select id="fYear" onchange="applyFilter()" style="background:#0a1628;color:#ff6e00;border:1px solid #ff6e00;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
+  <select id="fYear" onchange="onYearChange()" style="background:#0a1628;color:#ff6e00;border:1px solid #ff6e00;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
     <option value="">All Years</option>
   </select>
   <button class="fbtn ref" onclick="DATA_CACHE={};loadData()">Refresh</button>
@@ -137,38 +137,41 @@ tr:hover td{background:#1f2b47}
 </div>
 </div>
 
-<!-- COMPANY OVERVIEW -->
-<button class="acc-btn" id="btn-ovCompany" onclick="toggleAcc('ovCompany')">COMPANY OVERVIEW <span id="arr-ovCompany">&#9660;</span></button>
+<!-- OVERVIEWS SECTION -->
+<div class="section-title" style="margin-top:8px">OVERVIEWS</div>
+
+<!-- COMPANY -->
+<button class="acc-btn" id="btn-ovCompany" onclick="toggleAcc('ovCompany')">COMPANY <span id="arr-ovCompany">&#9660;</span></button>
 <div class="acc-content" id="acc-ovCompany">
   <div id="ovCompanyContent"></div>
 </div>
 
-<!-- PLATFORM OVERVIEW -->
-<button class="acc-btn" id="btn-ovPlatform" onclick="toggleAcc('ovPlatform')">PLATFORM OVERVIEW <span id="arr-ovPlatform">&#9660;</span></button>
+<!-- PLATFORM -->
+<button class="acc-btn" id="btn-ovPlatform" onclick="toggleAcc('ovPlatform')">PLATFORM <span id="arr-ovPlatform">&#9660;</span></button>
 <div class="acc-content" id="acc-ovPlatform">
   <div id="ovPlatformContent"></div>
 </div>
 
-<!-- CATEGORY OVERVIEW -->
-<button class="acc-btn" id="btn-ovCategory" onclick="toggleAcc('ovCategory')">CATEGORY OVERVIEW <span id="arr-ovCategory">&#9660;</span></button>
+<!-- CATEGORY -->
+<button class="acc-btn" id="btn-ovCategory" onclick="toggleAcc('ovCategory')">CATEGORY <span id="arr-ovCategory">&#9660;</span></button>
 <div class="acc-content" id="acc-ovCategory">
   <div id="ovCategoryContent"></div>
 </div>
 
-<!-- SUB CATEGORY OVERVIEW -->
-<button class="acc-btn" id="btn-ovSubCategory" onclick="toggleAcc('ovSubCategory')">SUB CATEGORY OVERVIEW <span id="arr-ovSubCategory">&#9660;</span></button>
+<!-- SUB CATEGORY -->
+<button class="acc-btn" id="btn-ovSubCategory" onclick="toggleAcc('ovSubCategory')">SUB CATEGORY <span id="arr-ovSubCategory">&#9660;</span></button>
 <div class="acc-content" id="acc-ovSubCategory">
   <div id="ovSubCategoryContent"></div>
 </div>
 
-<!-- PRODUCT OVERVIEW -->
-<button class="acc-btn" id="btn-ovProduct" onclick="toggleAcc('ovProduct')">PRODUCT OVERVIEW <span id="arr-ovProduct">&#9660;</span></button>
+<!-- PRODUCT -->
+<button class="acc-btn" id="btn-ovProduct" onclick="toggleAcc('ovProduct')">PRODUCT <span id="arr-ovProduct">&#9660;</span></button>
 <div class="acc-content" id="acc-ovProduct">
   <div id="ovProductContent"></div>
 </div>
 
-<!-- SKU OVERVIEW -->
-<button class="acc-btn" id="btn-ovSKU" onclick="toggleAcc('ovSKU')">SKU OVERVIEW <span id="arr-ovSKU">&#9660;</span></button>
+<!-- SKU -->
+<button class="acc-btn" id="btn-ovSKU" onclick="toggleAcc('ovSKU')">SKU <span id="arr-ovSKU">&#9660;</span></button>
 <div class="acc-content" id="acc-ovSKU">
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
     <select id="skuFilterPlat" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Platforms</option></select>
@@ -200,7 +203,7 @@ tr:hover td{background:#1f2b47}
 </div>
 
 <script>
-var API_URL='https://script.google.com/macros/s/AKfycbxw8-wREX_w3A8ZuuptJBVZPyfEq8EIzdn_TYCM4YT_pGqNp0A4hPosoT--RAErC9sY/exec';
+var API_URL='https://script.google.com/macros/s/AKfycbw3D6Ev5mmIleqxIj-w1xzBxazVFJNzADw41N8ItC_aYrhi5n4p39ey6l4PizkA4Gs/exec';
 
 var DATA={};
 var DATA_CACHE={};
@@ -283,42 +286,50 @@ function loadData(){
 function onErr(msg){document.getElementById('loader').innerHTML='<div style="color:#ff003c;font-size:14px">'+msg+'</div><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Test API directly</a>';}
 
 // ===== POPULATE MONTH/YEAR DROPDOWNS =====
+var MONTH_CAL_ORDER=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var _firstLoad=true;
+var _monthsByYear={};
+
+function getMonthCalIndex(m){
+  for(var i=0;i<MONTH_CAL_ORDER.length;i++){if(MONTH_CAL_ORDER[i].toLowerCase()===String(m).toLowerCase())return i;}
+  return 99;
+}
+
+function buildMonthButtons(monthsList){
+  // Sort months in descending calendar order (e.g. Feb, Jan, Dec, Nov...)
+  var mSeen={},uniqueMonths=[];
+  for(var i=0;i<monthsList.length;i++){
+    var mKey=String(monthsList[i]).toLowerCase();
+    if(!mSeen[mKey]){mSeen[mKey]=1;uniqueMonths.push(monthsList[i]);}
+  }
+  uniqueMonths.sort(function(a,b){return getMonthCalIndex(b)-getMonthCalIndex(a);});
+  var mBox=document.getElementById('monthBtns');
+  // Remember previously selected months
+  var prevActive={};
+  var prevBtns=mBox.querySelectorAll('.mbtn.active');
+  for(var p=0;p<prevBtns.length;p++)prevActive[prevBtns[p].getAttribute('data-month')]=1;
+  mBox.innerHTML='';
+  var allBtn=document.createElement('button');
+  allBtn.className='mbtn-all';
+  allBtn.textContent='All';
+  allBtn.onclick=function(){toggleAllMonths();};
+  mBox.appendChild(allBtn);
+  for(var i=0;i<uniqueMonths.length;i++){
+    var btn=document.createElement('button');
+    btn.className='mbtn';
+    btn.textContent=uniqueMonths[i].substring(0,3);
+    btn.setAttribute('data-month',uniqueMonths[i]);
+    btn.title=uniqueMonths[i];
+    btn.onclick=function(){this.classList.toggle('active');updateMonthAllBtn();applyFilter();};
+    mBox.appendChild(btn);
+  }
+  return uniqueMonths;
+}
+
 function populateFilters(d){
   var months=d.availableMonths||[];
   var years=d.availableYears||[];
-
-  // Deduplicate months case-insensitively, keep first occurrence, then reverse (latest first)
-  var mSeen={},uniqueMonths=[];
-  for(var i=0;i<months.length;i++){
-    var mKey=String(months[i]).toLowerCase();
-    if(!mSeen[mKey]){mSeen[mKey]=1;uniqueMonths.push(months[i]);}
-  }
-  uniqueMonths.reverse();
-  var mBox=document.getElementById('monthBtns');
-  var isFirstLoad=!mBox.hasChildNodes();
-  if(isFirstLoad){
-    var allBtn=document.createElement('button');
-    allBtn.className='mbtn-all';
-    allBtn.textContent='All';
-    allBtn.onclick=function(){toggleAllMonths();};
-    mBox.appendChild(allBtn);
-    for(var i=0;i<uniqueMonths.length;i++){
-      var btn=document.createElement('button');
-      btn.className='mbtn';
-      btn.textContent=uniqueMonths[i].substring(0,3);
-      btn.setAttribute('data-month',uniqueMonths[i]);
-      btn.title=uniqueMonths[i];
-      btn.onclick=function(){this.classList.toggle('active');updateMonthAllBtn();applyFilter();};
-      mBox.appendChild(btn);
-    }
-    // Auto-select latest month on first load
-    if(uniqueMonths.length>0){
-      var firstBtn=mBox.querySelector('.mbtn');
-      if(firstBtn)firstBtn.classList.add('active');
-      applyFilter();
-      return;
-    }
-  }
+  _monthsByYear=d.monthsByYear||{};
 
   // Deduplicate years
   var ySeen={},uniqueYears=[];
@@ -333,12 +344,58 @@ function populateFilters(d){
     ySel.innerHTML+='<option value="'+uniqueYears[i]+'">'+uniqueYears[i]+'</option>';
   }
   if(curY)ySel.value=curY;
+
+  // Determine which months to show based on year selection
+  var selYear=ySel.value;
+  var monthsToShow=months;
+  if(selYear&&_monthsByYear[selYear]){
+    monthsToShow=_monthsByYear[selYear];
+  }
+
+  var uniqueMonths=buildMonthButtons(monthsToShow);
+
+  if(_firstLoad){
+    _firstLoad=false;
+    // Auto-select latest month on first load
+    if(uniqueMonths.length>0){
+      var firstBtn=document.querySelector('#monthBtns .mbtn');
+      if(firstBtn)firstBtn.classList.add('active');
+      applyFilter();
+      return;
+    }
+  } else {
+    // Re-select previously active months that still exist, or select latest
+    var btns=document.querySelectorAll('#monthBtns .mbtn');
+    var anyReselected=false;
+    var prevMonths=getSelectedMonths();// will be empty since we rebuilt
+    // Just select the latest (first) month button
+    if(btns.length>0){btns[0].classList.add('active');anyReselected=true;}
+    updateMonthAllBtn();
+  }
 }
 
 // ===== APPLY FILTER (re-fetch from API with month/year params) =====
 function applyFilter(){
   DATA_CACHE={};
   loadData();
+}
+function onYearChange(){
+  var selYear=document.getElementById('fYear').value;
+  var monthsToShow=[];
+  if(selYear&&_monthsByYear[selYear]){
+    monthsToShow=_monthsByYear[selYear];
+  } else {
+    // All years - show all months from DATA
+    monthsToShow=DATA.availableMonths||[];
+  }
+  var uniqueMonths=buildMonthButtons(monthsToShow);
+  // Auto-select latest month
+  if(uniqueMonths.length>0){
+    var firstBtn=document.querySelector('#monthBtns .mbtn');
+    if(firstBtn)firstBtn.classList.add('active');
+  }
+  updateMonthAllBtn();
+  applyFilter();
 }
 
 // ===== RENDER ALL =====
