@@ -375,11 +375,11 @@ function renderPLCards(){
   h+='<div class="vl" style="color:#39ff14;font-size:28px">'+fmtCur(netProfit)+'</div>';
   h+='</div>';
 
-  // 2. TRANSFER card
+  // 2. TRANSFERRED card
   var trDataCard=td['Transfer'];
   var trTotal=trDataCard?Math.abs(trDataCard.total):0;
   h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\'Transfer\')">';
-  h+='<div class="lb">TRANSFER</div>';
+  h+='<div class="lb">TRANSFERRED</div>';
   h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(trTotal)+'</div>';
   h+='</div>';
 
@@ -402,9 +402,9 @@ function renderPLCards(){
     var eTotal2=eData2?eData2.total:0;
     reqTransfer-=Math.abs(eTotal2);
   }
-  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7">';
-  h+='<div class="lb">REQUIRED TRANSFER</div>';
-  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(reqTransfer)+'</div>';
+  h+='<div class="cd" style="cursor:pointer;border-left-color:#ffd700">';
+  h+='<div class="lb">REQUIRED TRANSFERRED</div>';
+  h+='<div class="vl" style="color:#ffd700">'+fmtCur(reqTransfer)+'</div>';
   h+='</div>';
 
   // 4. ORDERS
@@ -756,7 +756,7 @@ function _renderFullOverview(data,label,tableId){
   var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
   var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
-  var cols=['ORDERS','COP','RETURNS','ADVT','TRANSFER','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
+  var cols=['ORDERS','COP','RETURNS','ADVT','TRANSFERRED','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
   h+='<th style="text-align:left;min-width:120px" onclick="_sortTable(\''+tableId+'\',0,false)">'+label+' <span class="arrow"></span></th>';
   for(var ci=0;ci<cols.length;ci++){
     var isN=true;
