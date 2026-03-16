@@ -1,1212 +1,1159 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit & Loss</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#eee;padding:12px;min-height:100vh;overflow-x:hidden}
-.header-row{display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:4px;padding:0 40px}
-h1{text-align:center;color:#39ff14;font-size:20px;letter-spacing:1px}
-.sub{text-align:center;color:#39ff14;font-size:22px;margin-bottom:12px;letter-spacing:1px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.loading{text-align:center;padding:80px;color:#4fc3f7;font-size:18px}
-.spin{display:inline-block;width:30px;height:30px;border:3px solid #333;border-top:3px solid #4fc3f7;border-radius:50%;animation:sp .8s linear infinite;margin-bottom:10px}
-@keyframes sp{to{transform:rotate(360deg)}}
-.section-title{color:#4fc3f7;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-left:4px;font-weight:600}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
-.cd{background:#0d1a30;border-radius:10px;padding:12px;text-align:center;border-left:4px solid #4fc3f7;transition:.2s;cursor:pointer}
-.cd:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(79,195,247,.3);border-left-color:#fff}
-.cd.g{border-left-color:#39ff14}.cd.o{border-left-color:#ff6e00}.cd.r{border-left-color:#ff003c}.cd.p{border-left-color:#bf00ff}.cd.b{border-left-color:#4fc3f7}.cd.pk{border-left-color:#f72585}.cd.teal{border-left-color:#00bcd4}
-.cd .lb{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.5px}
-.cd .vl{font-size:22px;font-weight:700;color:#fff}
-.cd .sub-val{font-size:28px;color:#888;margin-top:4px;font-weight:800}
-.cd .change{font-size:11px;margin-top:2px}
-.cd .change.up{color:#39ff14}.cd .change.down{color:#ff003c}
-.profit{color:#39ff14;font-weight:700}.loss{color:#ff003c;font-weight:700}
-.fbox{background:#0d1a30;border-radius:10px;padding:12px;margin-bottom:12px}
-.frow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.frow select{background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:110px}
-.frow select:focus{border-color:#4fc3f7;outline:none}
-.fbtn{background:#39ff14;color:#1a1a2e;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
-.fbtn:hover{background:#2ed810}
-.fbtn.ref{background:#ff6e00}.fbtn.ref:hover{background:#e06000}
-.fbtn.dl{background:#4fc3f7;color:#1a1a2e}.fbtn.dl:hover{background:#3ab0e0}
-.tbox{background:#0d1a30;border-radius:10px;padding:12px;margin-bottom:12px}
-.tbox h3{color:#4fc3f7;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
-.tbox h3 span{color:#888;font-size:11px;font-weight:400}
-.twrap{overflow-x:auto;overflow-y:auto;max-height:600px;width:100%;position:relative}
-table{border-collapse:collapse;font-size:11px;white-space:nowrap;min-width:100%}
-th{background:#0a1e40;color:#4fc3f7;padding:6px 8px;text-align:center;position:sticky;top:0;z-index:3;cursor:pointer;user-select:none}
-th:hover{background:#1a4a80;color:#39ff14}
-th .arrow{margin-left:4px;font-size:10px;color:#39ff14}
-td{padding:5px 8px;border-bottom:1px solid #1a1a2e;color:#ddd;text-align:center}
-tr:nth-child(even) td{background:#0a0f1e}
-tr:hover td{background:#1f2b47}
+// ============================================================
+// MASTER PAYMENTS FILE - Apps Script (Sheets API - FAST)
+// ============================================================
+// Replaces slow QUERY+IMPORTRANGE with Sheets API batchGet
+// Pulls 12 columns from 16 source tabs across 4 spreadsheets
+// Headers: TOTAL, S.NO, YEAR, MONTH, PLATFORM, COMPANY, TYPE, TYPE 2, ORDER ID, SKU, QTY, AMOUNT
+//
+// SETUP:
+// 1. Paste in Extensions > Apps Script > Save
+// 2. Click "Services" (+) on left > Add "Google Sheets API"
+// 3. Reload sheet > use "Master Payments" menu
+// ============================================================
 
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
-.bg{background:#143d14;color:#39ff14;border:1px solid #2a6b2a}
-.br{background:#3d1414;color:#ff4444;border:1px solid #6b2a2a}
-.ft{text-align:center;color:#555;font-size:10px;margin-top:8px}
-.home-btn{background:none;border:none;cursor:pointer;padding:4px;position:absolute;left:0;top:50%;transform:translateY(-50%);display:flex;align-items:center}
-.home-btn svg{width:28px;height:28px;fill:none;stroke:#39ff14}
-/* Month toggle buttons */
-.mbtn{background:#0a1628;color:#888;border:2px solid #333;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:.2s;white-space:nowrap}
-.mbtn:hover{border-color:#39ff14;color:#eee}
-.mbtn.active{background:#39ff14;color:#0a1628;border-color:#39ff14}
-.mbtn-all{background:#0a1628;color:#4fc3f7;border:2px solid #4fc3f7;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:.2s}
-.mbtn-all:hover{background:#4fc3f7;color:#0a1628}
-.mbtn-all.active{background:#4fc3f7;color:#0a1628}
-/* Global search */
-.global-search{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:0;z-index:5;flex-shrink:0}
-.global-search .gs-icon{background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center}
-.global-search .gs-icon svg{width:24px;height:24px;fill:none;stroke:#39ff14;stroke-width:2}
-.global-search input{background:#0a0f1e;color:#eee;border:1px solid #39ff14;border-radius:6px;padding:5px 10px;font-size:12px;width:0;opacity:0;transition:width .3s,opacity .3s,padding .3s;overflow:hidden;padding:0}
-.global-search input.gs-open{width:180px;opacity:1;padding:5px 10px}
-.global-search input:focus{border-color:#39ff14;outline:none}
-/* Modal */
-.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);z-index:100;overflow-y:auto;padding:20px}
-.modal-overlay.show{display:block}
-.modal-box{background:#111827;border:1px solid #444;border-radius:12px;max-width:1200px;margin:0 auto;padding:20px;position:relative;min-height:300px;overflow-x:auto}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #444}
-.modal-title{color:#39ff14;font-size:16px;font-weight:700}
-.modal-close{background:#ff003c;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer}
-.modal-close:hover{background:#ff4444}
-.modal-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.modal-back{background:#4fc3f7;color:#1a1a2e;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
-.modal-back:hover{background:#39ff14}
-.modal-bread{color:#999;font-size:12px}
-.modal-bread span{color:#4fc3f7;font-weight:600}
-.drill-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px}
-.drill-item{background:#0d1a30;border-radius:10px;padding:14px;text-align:center;border-left:4px solid #4fc3f7;cursor:pointer;transition:.2s}
-.drill-item:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(79,195,247,.3);border-left-color:#39ff14}
-.drill-item .di-name{font-size:12px;color:#eee;font-weight:600;margin-bottom:4px}
-.drill-item .di-count{font-size:14px;font-weight:600;color:#39ff14}
-.drill-item .di-amt{font-size:18px;font-weight:700;margin-top:4px}
-/* Accordion */
-.acc-btn{background:#0d1a30;color:#ff6e00;border:1px solid #444;padding:12px 15px;width:100%;text-align:left;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;margin-top:10px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;transition:.2s;text-transform:uppercase}
-.acc-btn:hover{background:#1a3055;border-color:#4fc3f7}
-.acc-btn.active{border-color:#4fc3f7;color:#4fc3f7;border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0;background:#1a3055}
-.acc-btn span{font-size:10px;color:#888;transition:.2s}
-.acc-btn.active span{transform:rotate(180deg);color:#4fc3f7}
-.acc-content{display:none;background:#0d1a30;border:1px solid #4fc3f7;border-top:none;border-bottom-left-radius:6px;border-bottom-right-radius:6px;padding:15px;margin-bottom:10px}
-.acc-content.show{display:block}
-.chart-container{position:relative;height:280px;width:100%;margin-bottom:15px;background:#0a0f1e;border-radius:8px;padding:10px;border:1px solid #222}
-.chart-sm{height:220px}
-.pl-bar{height:28px;border-radius:4px;margin:4px 0;display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:600;min-width:60px;transition:.3s}
-.pl-label{display:flex;justify-content:space-between;align-items:center;margin:4px 0;font-size:12px}
-.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-/* Filter row */
-.flt-row td{padding:3px 4px;background:#0a1628!important}
-.flt-row input,.flt-row select{background:#0a0f1e;color:#eee;border:1px solid #333;border-radius:4px;padding:2px 4px;font-size:10px;width:100%}
-.flt-row input:focus,.flt-row select:focus{border-color:#4fc3f7;outline:none}
-/* Unit count inline */
-.unit-cnt{display:block;font-size:10px;color:#666;margin-top:1px;font-weight:700}
-/* SKU search */
-.sku-search{background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 10px;font-size:12px;width:100%;margin-bottom:8px}
-.sku-search:focus{border-color:#4fc3f7;outline:none}
-/* Total count badge */
-.cnt-badge{font-size:10px;color:#888;font-weight:400;margin-left:8px}
-@media(max-width:768px){.cards{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.chart-row{grid-template-columns:1fr}.global-search input.gs-open{width:120px}.header-row{padding:0 36px}}
-</style>
-</head>
-<body>
-<div class="header-row">
-  <button class="home-btn" onclick="location.reload()" title="Refresh"><svg viewBox="0 0 24 24"><path d="M4 12L12 4l8 8" stroke="#39ff14" stroke-width="1.5"/><path d="M6 10.5V19.5a.5.5 0 00.5.5H10v-5h4v5h3.5a.5.5 0 00.5-.5V10.5" stroke="#39ff14" stroke-width="1.5"/></svg></button>
-  <div class="sub">PROFIT & LOSS</div>
-  <div class="global-search"><button class="gs-icon" onclick="toggleGlobalSearch()" title="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button><input type="text" id="globalSearch" placeholder="Search all..." oninput="globalSearchFilter()"></div>
-</div>
+var HEADERS = ['TOTAL','S.NO','YEAR','MONTH','PLATFORM','COMPANY','TYPE','TYPE 2','ORDER ID','SKU','QTY','AMOUNT'];
+var MASTER_TAB = 'MASTER PAYMENTS FILE';
 
-<div id="loader" class="loading"><div class="spin"></div><br>Loading payment data...<br><span style="font-size:13px;color:#888">This may take a few seconds</span></div>
-<div id="app" style="display:none">
+// VLOOKUP source: Master SKU FILE
+var SKU_SHEET_ID = '1iSNEwTlqDWCBC0zYGLUUIJMl_F_mmtjlOwh4AlBjbXE';
+var SKU_TAB = 'Master SKU FILE';
+// Key = column AA, Return = AC, AD, AG, AJ, AM, AQ → write to M, N, O, P, Q, R
 
-<!-- P&L SUMMARY CARDS -->
-<div class="section-title">P&L OVERVIEW</div>
-<div class="cards" id="plCards"></div>
+// Revenue types (positive P&L contribution)
+var REVENUE_TYPES = {'Order':1,'Transfer':1,'Reimbursements':1,'MP Fee Rebate':1,'Referral Payment':1,'Fee Refund':1};
+// Cost types (negative P&L contribution) — everything else
 
-<!-- MONTH FILTER -->
-<div class="fbox">
-<div class="frow" style="flex-wrap:wrap;gap:6px;align-items:center">
-  <div id="monthBtns" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center"></div>
-  <select id="fYear" onchange="onYearChange()" style="background:#0a1628;color:#ff6e00;border:1px solid #ff6e00;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
-    <option value="">All Years</option>
-  </select>
-  <button class="fbtn ref" onclick="DATA_CACHE={};loadData()">Refresh</button>
-  <button class="fbtn dl" onclick="downloadCSV()">Download CSV</button>
-</div>
-</div>
-
-<!-- OVERVIEWS SECTION -->
-<div class="section-title" style="margin-top:8px">OVERVIEWS</div>
-
-<!-- COMPANY -->
-<button class="acc-btn" id="btn-ovCompany" onclick="toggleAcc('ovCompany')">COMPANY <span id="arr-ovCompany">&#9660;</span></button>
-<div class="acc-content" id="acc-ovCompany">
-  <div id="ovCompanyContent"></div>
-</div>
-
-<!-- PLATFORM -->
-<button class="acc-btn" id="btn-ovPlatform" onclick="toggleAcc('ovPlatform')">PLATFORM <span id="arr-ovPlatform">&#9660;</span></button>
-<div class="acc-content" id="acc-ovPlatform">
-  <div id="ovPlatformContent"></div>
-</div>
-
-<!-- CATEGORY -->
-<button class="acc-btn" id="btn-ovCategory" onclick="toggleAcc('ovCategory')">CATEGORY <span id="arr-ovCategory">&#9660;</span></button>
-<div class="acc-content" id="acc-ovCategory">
-  <div id="ovCategoryContent"></div>
-</div>
-
-<!-- SUB CATEGORY -->
-<button class="acc-btn" id="btn-ovSubCategory" onclick="toggleAcc('ovSubCategory')">SUB CATEGORY <span id="arr-ovSubCategory">&#9660;</span></button>
-<div class="acc-content" id="acc-ovSubCategory">
-  <div id="ovSubCategoryContent"></div>
-</div>
-
-<!-- PRODUCT -->
-<button class="acc-btn" id="btn-ovProduct" onclick="toggleAcc('ovProduct')">PRODUCT <span id="arr-ovProduct">&#9660;</span></button>
-<div class="acc-content" id="acc-ovProduct">
-  <div id="ovProductContent"></div>
-</div>
-
-<!-- SKU -->
-<button class="acc-btn" id="btn-ovSKU" onclick="toggleAcc('ovSKU')">SKU <span id="arr-ovSKU">&#9660;</span></button>
-<div class="acc-content" id="acc-ovSKU">
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
-    <select id="skuFilterPlat" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Platforms</option></select>
-    <select id="skuFilterComp" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Companies</option></select>
-    <select id="skuFilterCat" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Categories</option></select>
-    <select id="skuFilterProd" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Products</option></select>
-    <select id="skuFilterSKU" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All SKUs</option></select>
-  </div>
-  <input type="text" class="sku-search" id="skuSearch" placeholder="Search SKU, Platform, Company, Category, Product..." oninput="renderSKUOverview()">
-  <div id="ovSKUContent"></div>
-</div>
-
-<div class="ft" id="lastUp"></div>
-</div>
-
-<!-- DRILL-DOWN MODAL -->
-<div class="modal-overlay" id="modal">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div class="modal-title" id="modalTitle">Details</div>
-      <button class="modal-close" onclick="closeModal()">CLOSE</button>
-    </div>
-    <div class="modal-nav" id="modalNav" style="display:none">
-      <button class="modal-back" onclick="modalBack()">&#8592; Back</button>
-      <div class="modal-bread" id="modalBread"></div>
-    </div>
-    <div id="modalBody"></div>
-  </div>
-</div>
-
-<script>
-var API_URL='https://script.google.com/macros/s/AKfycbw3D6Ev5mmIleqxIj-w1xzBxazVFJNzADw41N8ItC_aYrhi5n4p39ey6l4PizkA4Gs/exec';
-
-var DATA={};
-var DATA_CACHE={};
-var _charts={};
-var REVENUE_TYPES={'Order':1,'Transfer':1,'Reimbursements':1,'MP Fee Rebate':1,'Referral Payment':1,'Fee Refund':1};
-var COLORS=['#4fc3f7','#39ff14','#ff6e00','#bf00ff','#f72585','#00bcd4','#ff6b35','#7b68ee','#ff9800','#8bc34a','#ef5350','#26a69a','#ab47bc','#ffa726'];
-var modalStack=[];
-
-function fmt(n){if(n==null||isNaN(n))return '0';return Number(n).toLocaleString('en-IN',{maximumFractionDigits:0});}
-function fmtCur(n){return fmt(n);}
-function fmtPct(n){return (n||0).toFixed(1)+'%';}
-function fmtDec(n){return (n||0).toFixed(2);}
-function destroyChart(id){if(_charts[id]){_charts[id].destroy();delete _charts[id];}}
-
-// ===== LOAD DATA =====
-function getSelectedMonths(){
-  var btns=document.querySelectorAll('#monthBtns .mbtn.active');
-  var months=[];
-  for(var i=0;i<btns.length;i++)months.push(btns[i].getAttribute('data-month'));
-  return months;
-}
-function toggleAllMonths(){
-  var btns=document.querySelectorAll('#monthBtns .mbtn');
-  var allBtn=document.querySelector('#monthBtns .mbtn-all');
-  var allActive=allBtn&&allBtn.classList.contains('active');
-  if(allActive){
-    allBtn.classList.remove('active');
-    for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');
-  }else{
-    allBtn.classList.add('active');
-    for(var i=0;i<btns.length;i++)btns[i].classList.add('active');
+var PLATFORMS = {
+  orders1: {
+    id: '14zSHcErsm1wWDfdU0e9i_qttzMSbu9lTy4a9jj-2c0E',
+    tab: 'ORDERS',
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','AK2:AK','I2:I','J2:J','AJ2:AJ','M2:M','AG2:AG']
+  },
+  paymentAdvice: {
+    id: '1PWavO2jatx_48djKk491ahEQM-hgLrVzexNqsNe9ajA',
+    tab: 'PAYMENT ADVICE',
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','G2:G','J2:J','AD2:AD','Q2:Q','T2:T']
+  },
+  sr: {
+    id: '1PWavO2jatx_48djKk491ahEQM-hgLrVzexNqsNe9ajA',
+    tab: 'SR',
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','J2:J','AS2:AS','S2:S','AT2:AT']
+  },
+  rto: {
+    id: '1PWavO2jatx_48djKk491ahEQM-hgLrVzexNqsNe9ajA',
+    tab: 'RTO',
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','J2:J','AS2:AS','S2:S','AT2:AT']
+  },
+  orders2: {
+    id: '19jHN50rRSIqEKEC6yxiOYKFjwSONKZ1ICPzj7aLA5Gs',
+    tab: 'ORDERS',
+    cols: ['A3:A','B3:B','C3:C','D3:D','E3:E','F3:F','CF3:CF','BQ3:BQ','N3:N','BM3:BM','BN3:BN','J3:J']
+  },
+  mpFeeRebate: {
+    id: '19jHN50rRSIqEKEC6yxiOYKFjwSONKZ1ICPzj7aLA5Gs',
+    tab: 'MP Fee Rebate',
+    cols: ['A4:A','B4:B','C4:C','D4:D','E4:E','F4:F','G4:G','H4:H','O4:O','N4:N','AC4:AC','L4:L']
+  },
+  nonOrderSPF: {
+    id: '19jHN50rRSIqEKEC6yxiOYKFjwSONKZ1ICPzj7aLA5Gs',
+    tab: 'Non_Order_SPF',
+    cols: ['A3:A','B3:B','C3:C','D3:D','E3:E','F3:F','G3:G','H3:H','I3:I','AB3:AB','AC3:AC','K3:K']
+  },
+  storageRecall: {
+    id: '19jHN50rRSIqEKEC6yxiOYKFjwSONKZ1ICPzj7aLA5Gs',
+    tab: 'Storage_Recall',
+    cols: ['A3:A','B3:B','C3:C','D3:D','E3:E','F3:F','G3:G','H3:H','J3:J','AB3:AB','AC3:AC','L3:L']
+  },
+  valueAddedServices: {
+    id: '19jHN50rRSIqEKEC6yxiOYKFjwSONKZ1ICPzj7aLA5Gs',
+    tab: 'Value Added Services',
+    cols: ['A3:A','B3:B','C3:C','D3:D','E3:E','F3:F','G3:G','H3:H','I3:I','AB3:AB','AC3:AC','K3:K']
+  },
+  ads1: {
+    id: '19jHN50rRSIqEKEC6yxiOYKFjwSONKZ1ICPzj7aLA5Gs',
+    tab: 'Ads',
+    cols: ['A3:A','B3:B','C3:C','D3:D','E3:E','F3:F','G3:G','h3:h','I3:I','AC3:AC','AD3:AD','Q3:Q']
+  },
+  transfer1: {
+    id: '19jHN50rRSIqEKEC6yxiOYKFjwSONKZ1ICPzj7aLA5Gs',
+    tab: 'Transfer',
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','G2:G','J2:J','U2:U','V2:V','M2:M']
+  },
+  orderPayments: {
+    id: '1ov2Z63nO6EpvmAQmlqA-wWwCdqebj20pBjWr2qP2P8c',
+    tab: 'Order Payments',
+    cols: ['A4:A','B4:B','C4:C','D4:D','E4:E','F4:F','AW4:AW','L4:L','G4:G','K4:K','O4:O','R4:R']
+  },
+  adsCost: {
+    id: '1ov2Z63nO6EpvmAQmlqA-wWwCdqebj20pBjWr2qP2P8c',
+    tab: 'Ads Cost',
+    cols: ['A4:A','B4:B','C4:C','D4:D','E4:E','F4:F','G4:G','G4:G','J4:J','AB4:AB','AC4:AC','O4:O']
+  },
+  referralPayments: {
+    id: '1ov2Z63nO6EpvmAQmlqA-wWwCdqebj20pBjWr2qP2P8c',
+    tab: 'Referral Payments',
+    cols: ['A4:A','B4:B','C4:C','D4:D','E4:E','F4:F','G4:G','H4:H','I4:I','AB4:AB','AC4:AC','M4:M']
+  },
+  compensationRecovery: {
+    id: '1ov2Z63nO6EpvmAQmlqA-wWwCdqebj20pBjWr2qP2P8c',
+    tab: 'Compensation and Recovery',
+    cols: ['A4:A','B4:B','C4:C','D4:D','E4:E','F4:F','G4:G','H4:H','AA4:AA','AB4:AB','AC4:AC','L4:L']
+  },
+  transfer2: {
+    id: '1ov2Z63nO6EpvmAQmlqA-wWwCdqebj20pBjWr2qP2P8c',
+    tab: 'Transfer',
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','G2:G','M2:M','R2:R','S2:S','N2:N']
   }
-  applyFilter();
-}
-function updateMonthAllBtn(){
-  var btns=document.querySelectorAll('#monthBtns .mbtn');
-  var activeCnt=document.querySelectorAll('#monthBtns .mbtn.active').length;
-  var allBtn=document.querySelector('#monthBtns .mbtn-all');
-  if(allBtn){
-    if(activeCnt===btns.length)allBtn.classList.add('active');
-    else allBtn.classList.remove('active');
-  }
-}
-function loadData(){
-  var selMonths=getSelectedMonths();
-  var selMonth=selMonths.join(',');
-  var selYear=document.getElementById('fYear')?document.getElementById('fYear').value:'';
+};
 
-  var fetchUrl=API_URL;
-  var params=[];
-  if(selMonth)params.push('month='+encodeURIComponent(selMonth));
-  if(selYear)params.push('year='+encodeURIComponent(selYear));
-  if(params.length>0)fetchUrl+='?'+params.join('&');
+// ===================== MENU =====================
 
-  var cacheKey=selMonth+'|'+selYear;
-  if(DATA_CACHE[cacheKey]){DATA=DATA_CACHE[cacheKey];populateFilters(DATA);renderAll();return;}
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('Master Payments')
+    .addItem('>>> RUN EVERYTHING <<<', 'runEverything')
+    .addItem('>>> CLEAR & RUN FRESH <<<', 'clearAndRun')
+    .addSeparator()
+    .addItem('Sync All Sources', 'syncAll')
+    .addSeparator()
+    .addItem('Sync Orders 1', 'sOrders1')
+    .addItem('Sync Payment Advice', 'sPaymentAdvice')
+    .addItem('Sync SR', 'sSR')
+    .addItem('Sync RTO', 'sRTO')
+    .addItem('Sync Orders 2', 'sOrders2')
+    .addItem('Sync MP Fee Rebate', 'sMpFeeRebate')
+    .addItem('Sync Non Order SPF', 'sNonOrderSPF')
+    .addItem('Sync Storage Recall', 'sStorageRecall')
+    .addItem('Sync Value Added Services', 'sValueAddedServices')
+    .addItem('Sync Ads 1', 'sAds1')
+    .addItem('Sync Transfer 1', 'sTransfer1')
+    .addItem('Sync Order Payments', 'sOrderPayments')
+    .addItem('Sync Ads Cost', 'sAdsCost')
+    .addItem('Sync Referral Payments', 'sReferralPayments')
+    .addItem('Sync Compensation & Recovery', 'sCompensationRecovery')
+    .addItem('Sync Transfer 2', 'sTransfer2')
+    .addSeparator()
+    .addItem('Run VLOOKUP (SKU)', 'vlookupSKU')
+    .addItem('Compute Formulas (S,T,U,V)', 'computeFormulas')
+    .addSeparator()
+    .addItem('Remove Duplicates', 'removeDuplicates')
+    .addSeparator()
+    .addItem('Start Auto-Refresh (1 min)', 'setupAutoRefresh')
+    .addItem('Stop Auto-Refresh', 'stopAutoRefresh')
+    .addSeparator()
+    .addItem('Setup Sheet', 'setupSheet')
+    .addToUi();
 
-  document.getElementById('loader').style.display='block';
-  document.getElementById('app').style.display='none';
-
-  fetch(fetchUrl,{redirect:'follow'})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
-    .then(function(text){
-      if(!text||text.trim().length===0){onErr('Empty response.');return;}
-      if(text.trim().charAt(0)==='<'){onErr('API returned HTML. Deploy with access: Anyone');return;}
-      try{
-        var d=JSON.parse(text);
-        DATA_CACHE[cacheKey]=d;
-        DATA=d;
-        document.getElementById('loader').style.display='none';
-        document.getElementById('app').style.display='block';
-        document.getElementById('lastUp').textContent='Updated: '+new Date().toLocaleString()+' | Data: '+(d.timestamp||'');
-        populateFilters(d);
-        renderAll();
-      }catch(e){onErr('JSON parse error: '+e.message);}
-    })
-    .catch(function(e){onErr('Fetch failed: '+e.message);});
+  ui.createMenu('P&L Dashboard')
+    .addItem('Test API', 'testPLApi')
+    .addToUi();
 }
 
-function onErr(msg){document.getElementById('loader').innerHTML='<div style="color:#ff003c;font-size:14px">'+msg+'</div><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Test API directly</a>';}
+// Individual sync functions
+function sOrders1() { syncOne('orders1'); }
+function sPaymentAdvice() { syncOne('paymentAdvice'); }
+function sSR() { syncOne('sr'); }
+function sRTO() { syncOne('rto'); }
+function sOrders2() { syncOne('orders2'); }
+function sMpFeeRebate() { syncOne('mpFeeRebate'); }
+function sNonOrderSPF() { syncOne('nonOrderSPF'); }
+function sStorageRecall() { syncOne('storageRecall'); }
+function sValueAddedServices() { syncOne('valueAddedServices'); }
+function sAds1() { syncOne('ads1'); }
+function sTransfer1() { syncOne('transfer1'); }
+function sOrderPayments() { syncOne('orderPayments'); }
+function sAdsCost() { syncOne('adsCost'); }
+function sReferralPayments() { syncOne('referralPayments'); }
+function sCompensationRecovery() { syncOne('compensationRecovery'); }
+function sTransfer2() { syncOne('transfer2'); }
 
-// ===== POPULATE MONTH/YEAR DROPDOWNS =====
-var MONTH_CAL_ORDER=['January','February','March','April','May','June','July','August','September','October','November','December'];
-var _firstLoad=true;
-var _monthsByYear={};
+// ===================== VLOOKUP SKU =====================
+// Reads Master SKU FILE: key=AA, returns AC,AD,AG,AJ,AM,AQ
+// Writes to MASTER PAYMENTS FILE columns M,N,O,P,Q,R based on key=J
 
-function getMonthCalIndex(m){
-  for(var i=0;i<MONTH_CAL_ORDER.length;i++){if(MONTH_CAL_ORDER[i].toLowerCase()===String(m).toLowerCase())return i;}
-  return 99;
-}
+function vlookupSKU() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ms = ss.getSheetByName(MASTER_TAB);
+  if (!ms) { SpreadsheetApp.getUi().alert('Master tab not found. Run Setup Sheet first.'); return; }
 
-function buildMonthButtons(monthsList){
-  // Sort months in descending calendar order (e.g. Feb, Jan, Dec, Nov...)
-  var mSeen={},uniqueMonths=[];
-  for(var i=0;i<monthsList.length;i++){
-    var mKey=String(monthsList[i]).toLowerCase();
-    if(!mSeen[mKey]){mSeen[mKey]=1;uniqueMonths.push(monthsList[i]);}
+  var lr = ms.getLastRow();
+  if (lr < 2) { SpreadsheetApp.getUi().alert('No data in master tab.'); return; }
+
+  // 1. Read lookup table from Master SKU FILE via Sheets API
+  var lookupCols = ['AA2:AA','AC2:AC','AD2:AD','AG2:AG','AJ2:AJ','AM2:AM','AQ2:AQ'];
+  var ranges = [];
+  for (var i = 0; i < lookupCols.length; i++) {
+    ranges.push("'" + SKU_TAB + "'!" + lookupCols[i]);
   }
-  uniqueMonths.sort(function(a,b){return getMonthCalIndex(b)-getMonthCalIndex(a);});
-  var mBox=document.getElementById('monthBtns');
-  // Remember previously selected months
-  var prevActive={};
-  var prevBtns=mBox.querySelectorAll('.mbtn.active');
-  for(var p=0;p<prevBtns.length;p++)prevActive[prevBtns[p].getAttribute('data-month')]=1;
-  mBox.innerHTML='';
-  var allBtn=document.createElement('button');
-  allBtn.className='mbtn-all';
-  allBtn.textContent='All';
-  allBtn.onclick=function(){toggleAllMonths();};
-  mBox.appendChild(allBtn);
-  var anyRestored=false;
-  for(var i=0;i<uniqueMonths.length;i++){
-    var btn=document.createElement('button');
-    btn.className='mbtn';
-    btn.textContent=uniqueMonths[i].substring(0,3);
-    btn.setAttribute('data-month',uniqueMonths[i]);
-    btn.title=uniqueMonths[i];
-    if(prevActive[uniqueMonths[i]]){btn.classList.add('active');anyRestored=true;}
-    btn.onclick=function(){this.classList.toggle('active');updateMonthAllBtn();applyFilter();};
-    mBox.appendChild(btn);
-  }
-  return {months:uniqueMonths, anyRestored:anyRestored};
-}
+  var res = Sheets.Spreadsheets.Values.batchGet(SKU_SHEET_ID, {ranges: ranges});
+  var vr = res.valueRanges;
 
-function populateFilters(d){
-  var months=d.availableMonths||[];
-  var years=d.availableYears||[];
-  _monthsByYear=d.monthsByYear||{};
-
-  // Deduplicate years
-  var ySeen={},uniqueYears=[];
-  for(var i=0;i<years.length;i++){
-    var yKey=String(years[i]).toLowerCase();
-    if(!ySeen[yKey]){ySeen[yKey]=1;uniqueYears.push(years[i]);}
-  }
-  var ySel=document.getElementById('fYear');
-  var curY=ySel.value;
-  ySel.innerHTML='<option value="">All Years</option>';
-  for(var i=0;i<uniqueYears.length;i++){
-    ySel.innerHTML+='<option value="'+uniqueYears[i]+'">'+uniqueYears[i]+'</option>';
-  }
-  if(curY)ySel.value=curY;
-
-  // Determine which months to show based on year selection
-  var selYear=ySel.value;
-  var monthsToShow=months;
-  if(selYear&&_monthsByYear[selYear]){
-    monthsToShow=_monthsByYear[selYear];
+  // Find max rows in lookup
+  var maxLookup = 0;
+  for (var v = 0; v < vr.length; v++) {
+    var len = (vr[v].values || []).length;
+    if (len > maxLookup) maxLookup = len;
   }
 
-  var buildResult=buildMonthButtons(monthsToShow);
-  var uniqueMonths=buildResult.months;
-  var anyRestored=buildResult.anyRestored;
-
-  if(_firstLoad){
-    _firstLoad=false;
-    // Auto-select latest month on first load
-    if(uniqueMonths.length>0){
-      var firstBtn=document.querySelector('#monthBtns .mbtn');
-      if(firstBtn)firstBtn.classList.add('active');
-      applyFilter();
-      return;
+  // 2. Build lookup map: AA value → [AC, AD, AG, AJ, AM, AQ] (case-insensitive)
+  var lookupMap = {};
+  for (var r = 0; r < maxLookup; r++) {
+    var keyArr = (vr[0].values || []);
+    var key = r < keyArr.length && keyArr[r].length > 0 ? String(keyArr[r][0]).trim().toUpperCase() : '';
+    if (!key) continue;
+    var vals = [];
+    for (var c = 1; c < vr.length; c++) {
+      var cv = (vr[c].values || []);
+      vals.push(r < cv.length && (cv[r] || []).length > 0 ? cv[r][0] : '');
     }
-  } else {
-    // If previously active months were restored by buildMonthButtons, keep them
-    // Otherwise select the latest (first) month button
-    if(!anyRestored){
-      var btns=document.querySelectorAll('#monthBtns .mbtn');
-      if(btns.length>0){btns[0].classList.add('active');}
-    }
-    updateMonthAllBtn();
+    if (!lookupMap[key]) lookupMap[key] = vals; // first match wins
   }
-}
 
-// ===== APPLY FILTER (re-fetch from API with month/year params) =====
-function applyFilter(){
-  DATA_CACHE={};
-  loadData();
-}
-function onYearChange(){
-  var selYear=document.getElementById('fYear').value;
-  var monthsToShow=[];
-  if(selYear&&_monthsByYear[selYear]){
-    monthsToShow=_monthsByYear[selYear];
-  } else {
-    // All years - show all months from DATA
-    monthsToShow=DATA.availableMonths||[];
-  }
-  var buildResult=buildMonthButtons(monthsToShow);
-  // Auto-select latest month if none restored
-  if(!buildResult.anyRestored&&buildResult.months.length>0){
-    var firstBtn=document.querySelector('#monthBtns .mbtn');
-    if(firstBtn)firstBtn.classList.add('active');
-  }
-  updateMonthAllBtn();
-  applyFilter();
-}
+  // 3. Read column J (col 10) from MASTER PAYMENTS FILE
+  var keys = ms.getRange(2, 10, lr - 1, 1).getValues();
 
-// ===== RENDER ALL =====
-function renderAll(){
-  renderPLCards();
-  renderCompanyOverview();
-  renderPlatformOverview();
-  renderCategoryOverview();
-  renderSubCategoryOverview();
-  renderProductOverview();
-  renderSKUOverview();
-}
-
-// ===== GLOBAL SEARCH =====
-function toggleGlobalSearch(){
-  var inp=document.getElementById('globalSearch');
-  if(inp.classList.contains('gs-open')){
-    inp.classList.remove('gs-open');
-    inp.value='';
-    globalSearchFilter();
-  }else{
-    inp.classList.add('gs-open');
-    inp.focus();
-  }
-}
-function globalSearchFilter(){
-  var q=(document.getElementById('globalSearch').value||'').trim().toLowerCase();
-  // Show/hide accordion sections based on match, highlight matching rows
-  var sections=['ovCompany','ovPlatform','ovCategory','ovSubCategory','ovProduct','ovSKU'];
-  for(var s=0;s<sections.length;s++){
-    var content=document.getElementById('acc-'+sections[s]);
-    var rows=content?content.querySelectorAll('table tbody tr'):[];
-    var anyMatch=false;
-    for(var r=0;r<rows.length;r++){
-      var txt=rows[r].textContent.toLowerCase();
-      if(!q||txt.indexOf(q)>-1){rows[r].style.display='';anyMatch=true;}
-      else{rows[r].style.display='none';}
+  // 4. Build output for columns M-R (cols 13-18)
+  var output = [];
+  var matched = 0;
+  for (var i = 0; i < keys.length; i++) {
+    var k = String(keys[i][0]).trim().toUpperCase();
+    if (k && lookupMap[k]) {
+      output.push(lookupMap[k]);
+      matched++;
+    } else {
+      output.push(['','','','','','']);
     }
   }
+
+  // 5. Write to columns M-R
+  if (output.length > 0) {
+    ms.getRange(2, 13, output.length, 6).setValues(output);
+  }
+
+  SpreadsheetApp.getUi().alert('VLOOKUP Done!\nRows checked: ' + keys.length + '\nMatched: ' + matched);
 }
 
-// ===== P&L CARDS (Revenue & COP only, with drill-down) =====
-var PL_DM={type:'',level:0,platform:'',company:''};
-var PL_COLORS=['#39ff14','#4fc3f7','#ff6e00','#bf00ff','#f72585','#00bcd4','#ff6b35','#7b68ee','#ff9800','#8bc34a','#ef5350','#26a69a'];
+// ===================== COMPUTE FORMULAS (S, T, U, W) =====================
+// R = AQ from VLOOKUP (untouched)
+// S = SUMIF(A:A, A_value, L:L) — sum of AMOUNT for all rows with same TOTAL
+// T = R value (VLOOKUP AQ) shown ONLY when: multiple entries for same A, no RETURN in G, first ORDER row only
+// U = S value (SUMIF) shown with priority: if RETURN exists → first RETURN row; else first ORDER row; only when multiple entries
+// V = S value on 1st qualifying entry per unique A; rows with G=Order/Return/Shipping Service → always blank, totally ignored
 
-var TYPE_CARD_ORDER=['Advertisement','Warehouse Charges','Value Added Services','Affiliate Fee','Charges','Adjustment','Reimbursements'];
-var TYPE_CARD_EXCLUDE={'Order':1,'Return':1,'Shipping Service':1,'Fee Refund':1,'MP Fee Rebate':1};
-var TYPE_CARD_COLORS={'Advertisement':'#bf00ff','Warehouse Charges':'#f72585','Value Added Services':'#00bcd4','Affiliate Fee':'#ff6b35','Charges':'#7b68ee','Adjustment':'#ff9800','Reimbursements':'#8bc34a','Unknown':'#ffd700'};
+function computeFormulas() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ms = ss.getSheetByName(MASTER_TAB);
+  if (!ms) return;
+  var lr = ms.getLastRow();
+  if (lr < 2) return;
 
-function renderPLCards(){
-  var pc=DATA.plCards||{};
-  var td=DATA.typeDetail||{};
-  var revenue=pc.revenue||0;
-  var cop=pc.cop||0;
-  var returns=pc.returns||0;
-  var allTypes=Object.keys(td).sort();
-  var PROFIT_ADD={'Adjustment':1,'Reimbursements':1};
+  var numRows = lr - 1;
 
-  // Calculate Net Profit first: Revenue - COP - Returns - all type cards except Transfer
-  var netProfit=revenue - Math.abs(cop) - Math.abs(returns);
-  for(var ni=0;ni<TYPE_CARD_ORDER.length;ni++){
-    var nName=TYPE_CARD_ORDER[ni];
-    if(nName.toUpperCase()==='TRANSFER')continue;
-    var nData=td[nName];
-    var nTotal=nData?nData.total:0;
-    if(PROFIT_ADD[nName]){netProfit+=Math.abs(nTotal);}
-    else{netProfit-=Math.abs(nTotal);}
-  }
-  for(var ei=0;ei<allTypes.length;ei++){
-    var eName=allTypes[ei];
-    if(TYPE_CARD_EXCLUDE[eName])continue;
-    if(TYPE_CARD_ORDER.indexOf(eName)!==-1)continue;
-    if(eName.toUpperCase()==='TRANSFER')continue;
-    var eData=td[eName];
-    var eTotal=eData?eData.total:0;
-    netProfit-=Math.abs(eTotal);
-  }
+  // Read required columns
+  var dataA = ms.getRange(2, 1, numRows, 1).getValues();   // A (TOTAL)
+  var dataG = ms.getRange(2, 7, numRows, 1).getValues();   // G (TYPE)
+  var dataL = ms.getRange(2, 12, numRows, 1).getValues();  // L (AMOUNT)
+  var dataR = ms.getRange(2, 18, numRows, 1).getValues();  // R (VLOOKUP AQ value)
 
-  var h='';
-  // 1. NET PROFIT card FIRST (bigger, green)
-  h+='<div class="cd g" style="cursor:pointer">';
-  h+='<div class="lb" style="color:#39ff14;font-weight:700">NET PROFIT</div>';
-  h+='<div class="vl" style="color:#39ff14;font-size:28px">'+fmtCur(netProfit)+'</div>';
-  h+='</div>';
-
-  // 2. TRANSFERRED card
-  var trDataCard=td['Transfer'];
-  var trTotal=trDataCard?Math.abs(trDataCard.total):0;
-  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\'Transfer\')">';
-  h+='<div class="lb">TRANSFERRED</div>';
-  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(trTotal)+'</div>';
-  h+='</div>';
-
-  // 3. REQUIRED TRANSFER card
-  var reqTransfer=revenue - Math.abs(returns);
-  for(var ri=0;ri<TYPE_CARD_ORDER.length;ri++){
-    var rName=TYPE_CARD_ORDER[ri];
-    if(rName.toUpperCase()==='TRANSFER')continue;
-    var rData=td[rName];
-    var rTotal=rData?rData.total:0;
-    if(PROFIT_ADD[rName]){reqTransfer+=Math.abs(rTotal);}
-    else{reqTransfer-=Math.abs(rTotal);}
-  }
-  for(var ei2=0;ei2<allTypes.length;ei2++){
-    var eName2=allTypes[ei2];
-    if(TYPE_CARD_EXCLUDE[eName2])continue;
-    if(TYPE_CARD_ORDER.indexOf(eName2)!==-1)continue;
-    if(eName2.toUpperCase()==='TRANSFER')continue;
-    var eData2=td[eName2];
-    var eTotal2=eData2?eData2.total:0;
-    reqTransfer-=Math.abs(eTotal2);
-  }
-  h+='<div class="cd" style="cursor:pointer;border-left-color:#ffd700">';
-  h+='<div class="lb">REQUIRED TRANSFERRED</div>';
-  h+='<div class="vl" style="color:#ffd700">'+fmtCur(reqTransfer)+'</div>';
-  h+='</div>';
-
-  // 4. ORDERS
-  h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">ORDERS</div><div class="vl" style="color:#f72585">'+fmtCur(revenue)+'</div></div>';
-  h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#ff6e00">-'+fmtCur(Math.abs(cop))+'</div></div>';
-  h+='<div class="cd r" style="cursor:pointer" onclick="openPLDrill(\'returns\')"><div class="lb">RETURNS</div><div class="vl" style="color:#ff003c">'+fmtCur(returns)+'</div></div>';
-
-  for(var ti=0;ti<TYPE_CARD_ORDER.length;ti++){
-    var tName=TYPE_CARD_ORDER[ti];
-    var tData=td[tName];
-    var tTotal=tData?tData.total:0;
-    if(tName.toUpperCase()==='TRANSFER') tTotal=Math.abs(tTotal);
-    var tColor=TYPE_CARD_COLORS[tName]||'#4fc3f7';
-    h+='<div class="cd" style="cursor:pointer;border-left-color:'+tColor+'" onclick="openTypeDrill(\''+tName.replace(/'/g,"\\'")+'\')">';
-    h+='<div class="lb">'+tName.toUpperCase()+'</div>';
-    h+='<div class="vl" style="color:'+tColor+'">'+fmtCur(tTotal)+'</div>';
-    h+='</div>';
-  }
-
-  for(var ai=0;ai<allTypes.length;ai++){
-    var aName=allTypes[ai];
-    if(TYPE_CARD_EXCLUDE[aName])continue;
-    if(TYPE_CARD_ORDER.indexOf(aName)!==-1)continue;
-    if(aName.toUpperCase()==='TRANSFER')continue;
-    var aData=td[aName];
-    var aTotal=aData?aData.total:0;
-    var aColor=TYPE_CARD_COLORS[aName]||'#4fc3f7';
-    h+='<div class="cd" style="cursor:pointer;border-left-color:'+aColor+'" onclick="openTypeDrill(\''+aName.replace(/'/g,"\\'")+'\')">';
-    h+='<div class="lb">'+aName.toUpperCase()+'</div>';
-    h+='<div class="vl" style="color:'+aColor+'">'+fmtCur(aTotal)+'</div>';
-    h+='</div>';
-  }
-
-  document.getElementById('plCards').innerHTML=h;
-}
-
-// ===== TYPE CARD DRILL-DOWN =====
-function openTypeDrill(typeName){
-  PL_DM={type:'typeCard',level:1,platform:'',company:'',typeName:typeName};
-  document.getElementById('modalTitle').textContent=typeName+' - Platform Breakdown';
-  document.getElementById('modalNav').style.display='none';
-  document.getElementById('modal').classList.add('show');
-  document.body.style.overflow='hidden';
-  modalStack=[];
-  renderTypeDrillPlatforms();
-}
-
-function getTypeDrillColor(typeName){return TYPE_CARD_COLORS[typeName]||'#4fc3f7';}
-
-function renderTypeDrillPlatforms(){
-  var td=DATA.typeDetail||{};
-  var tData=td[PL_DM.typeName];
-  if(!tData||!tData.byPlatform||!Object.keys(tData.byPlatform).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
-  var byPlat=tData.byPlatform;
-  var clr=getTypeDrillColor(PL_DM.typeName);
-  var keys=Object.keys(byPlat).sort(function(a,b){return Math.abs(byPlat[b].value)-Math.abs(byPlat[a].value);});
-  var total=0;for(var i=0;i<keys.length;i++)total+=byPlat[keys[i]].value;
-  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Total: <span style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</span> | '+keys.length+' platforms</div>';
-  h+='<div class="drill-grid">';
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=byPlat[k];
-    var color=PL_COLORS[i%PL_COLORS.length];
-    var pct=total!==0?((d.value/total)*100):0;
-    h+='<div class="drill-item" style="border-left-color:'+color+'" onclick="typeDrillToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
-    h+='<div class="di-name">'+k+'</div>';
-    h+='<div class="di-count">'+fmt(d.entries)+' entries</div>';
-    h+='<div class="di-amt" style="color:'+clr+'">'+fmtCur(d.value)+'</div>';
-    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+'</div>';
-    h+='</div>';
-  }
-  h+='</div>';
-  h+='<div class="tbox"><h3>'+PL_DM.typeName.toUpperCase()+' BY PLATFORM <span>Click for company breakdown</span></h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">PLATFORM</th><th>ENTRIES</th><th>VALUE</th><th>% OF TOTAL</th></tr></thead><tbody>';
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=byPlat[k];var pct=total!==0?((d.value/total)*100):0;var color=PL_COLORS[i%PL_COLORS.length];
-    h+='<tr style="cursor:pointer" onclick="typeDrillToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
-    h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+k+'</td>';
-    h+='<td>'+fmt(d.entries)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(d.value)+'</td><td>'+fmtPct(pct)+'</td></tr>';
-  }
-  var totE=0;for(var i=0;i<keys.length;i++)totE+=byPlat[keys[i]].entries;
-  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7"><td style="text-align:left;color:#4fc3f7">TOTAL</td><td style="color:#fff">'+fmt(totE)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</td><td>100%</td></tr>';
-  h+='</tbody></table></div></div>';
-  document.getElementById('modalBody').innerHTML=h;
-}
-
-function typeDrillToPlatform(plat){
-  PL_DM.level=2;PL_DM.platform=plat;
-  document.getElementById('modalTitle').textContent=PL_DM.typeName+' - '+plat+' - Company Breakdown';
-  document.getElementById('modalNav').style.display='flex';
-  document.getElementById('modalBread').innerHTML='<span>'+PL_DM.typeName+'</span> &rarr; <span>'+plat+'</span>';
-  renderTypeDrillCompanies();
-}
-
-function renderTypeDrillCompanies(){
-  var td=DATA.typeDetail||{};
-  var tData=td[PL_DM.typeName];
-  var platData=tData&&tData.byPlatform?tData.byPlatform[PL_DM.platform]:null;
-  var byComp=platData&&platData.byCompany?platData.byCompany:null;
-  if(!byComp||!Object.keys(byComp).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
-  var clr=getTypeDrillColor(PL_DM.typeName);
-  var keys=Object.keys(byComp).sort(function(a,b){return Math.abs(byComp[b].value)-Math.abs(byComp[a].value);});
-  var total=0;for(var i=0;i<keys.length;i++)total+=byComp[keys[i]].value;
-  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Total: <span style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</span> | '+keys.length+' companies</div>';
-  h+='<div class="drill-grid">';
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=byComp[k];
-    var color=PL_COLORS[i%PL_COLORS.length];
-    var pct=total!==0?((d.value/total)*100):0;
-    h+='<div class="drill-item" style="border-left-color:'+color+'">';
-    h+='<div class="di-name">'+k+'</div>';
-    h+='<div class="di-count">'+fmt(d.entries)+' entries</div>';
-    h+='<div class="di-amt" style="color:'+clr+'">'+fmtCur(d.value)+'</div>';
-    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+'</div>';
-    h+='</div>';
-  }
-  h+='</div>';
-  h+='<div class="tbox"><h3>'+PL_DM.typeName.toUpperCase()+' BY COMPANY</h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">COMPANY</th><th>ENTRIES</th><th>VALUE</th><th>% OF TOTAL</th></tr></thead><tbody>';
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=byComp[k];var pct=total!==0?((d.value/total)*100):0;var color=PL_COLORS[i%PL_COLORS.length];
-    h+='<tr><td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+k+'</td>';
-    h+='<td>'+fmt(d.entries)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(d.value)+'</td><td>'+fmtPct(pct)+'</td></tr>';
-  }
-  var totE=0;for(var i=0;i<keys.length;i++)totE+=byComp[keys[i]].entries;
-  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7"><td style="text-align:left;color:#4fc3f7">TOTAL</td><td style="color:#fff">'+fmt(totE)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</td><td>100%</td></tr>';
-  h+='</tbody></table></div></div>';
-  document.getElementById('modalBody').innerHTML=h;
-}
-
-// ===== P&L CARD DRILL-DOWN (Platform -> Company) =====
-function plDrillLabel(type){return type==='revenue'?'Orders':type==='cop'?'COP (Cost of Product)':'Returns';}
-function plDrillColor(type){return type==='revenue'?'#39ff14':type==='cop'?'#ff6e00':'#ff003c';}
-
-function openPLDrill(type){
-  PL_DM={type:type,level:1,platform:'',company:''};
-  var label=plDrillLabel(type);
-  document.getElementById('modalTitle').textContent=label+' - Platform Breakdown';
-  document.getElementById('modalNav').style.display='none';
-  document.getElementById('modal').classList.add('show');
-  document.body.style.overflow='hidden';
-  modalStack=[];
-  renderPLDrillPlatforms();
-}
-
-function renderPLDrillPlatforms(){
-  var pc=DATA.plCards||{};
-  var byPlat=PL_DM.type==='revenue'?pc.revenueByPlatform:PL_DM.type==='cop'?pc.copByPlatform:pc.returnsByPlatform;
-  var clr=plDrillColor(PL_DM.type);
-  var lbl=PL_DM.type==='revenue'?'ORDERS':PL_DM.type==='cop'?'COP':'RETURNS';
-  if(!byPlat||!Object.keys(byPlat).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
-  var keys=Object.keys(byPlat).sort(function(a,b){return Math.abs(byPlat[b].value)-Math.abs(byPlat[a].value);});
-  var total=0;for(var i=0;i<keys.length;i++)total+=byPlat[keys[i]].value;
-  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Total: <span style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</span> | '+keys.length+' platforms</div>';
-  h+='<div class="drill-grid">';
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=byPlat[k];
-    var color=PL_COLORS[i%PL_COLORS.length];
-    var pct=total!==0?((d.value/total)*100):0;
-    h+='<div class="drill-item" style="border-left-color:'+color+'" onclick="plDrillToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
-    h+='<div class="di-name">'+k+'</div>';
-    h+='<div class="di-count">'+fmt(d.entries)+' entries</div>';
-    h+='<div class="di-amt" style="color:'+clr+'">'+fmtCur(d.value)+'</div>';
-    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+'</div>';
-    h+='</div>';
-  }
-  h+='</div>';
-  h+='<div class="tbox"><h3>'+lbl+' BY PLATFORM <span>Click for company breakdown</span></h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">PLATFORM</th><th>ENTRIES</th><th>VALUE</th><th>% OF TOTAL</th></tr></thead><tbody>';
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=byPlat[k];var pct=total!==0?((d.value/total)*100):0;var color=PL_COLORS[i%PL_COLORS.length];
-    h+='<tr style="cursor:pointer" onclick="plDrillToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
-    h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+k+'</td>';
-    h+='<td>'+fmt(d.entries)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(d.value)+'</td><td>'+fmtPct(pct)+'</td></tr>';
-  }
-  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7"><td style="text-align:left;color:#4fc3f7">TOTAL</td><td style="color:#fff">'+fmt(function(){var s=0;for(var i=0;i<keys.length;i++)s+=byPlat[keys[i]].entries;return s;}())+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</td><td>100%</td></tr>';
-  h+='</tbody></table></div></div>';
-  document.getElementById('modalBody').innerHTML=h;
-}
-
-function plDrillToPlatform(plat){
-  PL_DM.level=2;PL_DM.platform=plat;
-  var label=plDrillLabel(PL_DM.type);
-  document.getElementById('modalTitle').textContent=label+' - '+plat+' - Company Breakdown';
-  document.getElementById('modalNav').style.display='flex';
-  document.getElementById('modalBread').innerHTML='<span>'+label+'</span> &rarr; <span>'+plat+'</span>';
-  renderPLDrillCompanies();
-}
-
-function renderPLDrillCompanies(){
-  var pc=DATA.plCards||{};
-  var allByComp=PL_DM.type==='revenue'?pc.revenueByCompany:PL_DM.type==='cop'?pc.copByCompany:pc.returnsByCompany;
-  var byPlat=PL_DM.type==='revenue'?pc.revenueByPlatform:PL_DM.type==='cop'?pc.copByPlatform:pc.returnsByPlatform;
-  var clr=plDrillColor(PL_DM.type);
-  var lbl=PL_DM.type==='revenue'?'ORDERS':PL_DM.type==='cop'?'COP':'RETURNS';
-  // Filter companies to only those under selected platform
-  var platCompanies=(byPlat&&byPlat[PL_DM.platform]&&byPlat[PL_DM.platform].companies)?byPlat[PL_DM.platform].companies:{};
-  var byComp={};
-  if(Object.keys(platCompanies).length>0){
-    var cKeys=Object.keys(platCompanies);
-    for(var ci=0;ci<cKeys.length;ci++){
-      byComp[cKeys[ci]]=platCompanies[cKeys[ci]];
+  // === COLUMN S (col 19): SUMIF(A:A, A_value, L:L) ===
+  // NOTE: All A values normalized to UPPERCASE for case-insensitive matching
+  var sumByA = {};
+  for (var i = 0; i < numRows; i++) {
+    var a = String(dataA[i][0]).trim().toUpperCase();
+    if (!a) continue;
+    var raw = dataL[i][0];
+    var amt = 0;
+    if (typeof raw === 'number') {
+      amt = raw;
+    } else {
+      var cleaned = String(raw).replace(/,/g, '').trim();
+      amt = parseFloat(cleaned) || 0;
     }
-  } else if(allByComp){
-    byComp=allByComp;
+    sumByA[a] = (sumByA[a] || 0) + amt;
   }
-  if(!byComp||!Object.keys(byComp).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
-  var keys=Object.keys(byComp).sort(function(a,b){return Math.abs(byComp[b].value)-Math.abs(byComp[a].value);});
-  var total=0;for(var i=0;i<keys.length;i++)total+=byComp[keys[i]].value;
-  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Total: <span style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</span> | '+keys.length+' companies</div>';
-  h+='<div class="drill-grid">';
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=byComp[k];
-    var color=PL_COLORS[i%PL_COLORS.length];
-    var pct=total!==0?((d.value/total)*100):0;
-    h+='<div class="drill-item" style="border-left-color:'+color+'">';
-    h+='<div class="di-name">'+k+'</div>';
-    h+='<div class="di-count">'+fmt(d.entries)+' entries</div>';
-    h+='<div class="di-amt" style="color:'+clr+'">'+fmtCur(d.value)+'</div>';
-    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+'</div>';
-    h+='</div>';
+  var outS = [];
+  for (var i = 0; i < numRows; i++) {
+    var a = String(dataA[i][0]).trim().toUpperCase();
+    outS.push([a ? (Math.round((sumByA[a] || 0) * 100) / 100) : '']);
   }
-  h+='</div>';
-  h+='<div class="tbox"><h3>'+lbl+' BY COMPANY</h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">COMPANY</th><th>ENTRIES</th><th>VALUE</th><th>% OF TOTAL</th></tr></thead><tbody>';
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=byComp[k];var pct=total!==0?((d.value/total)*100):0;var color=PL_COLORS[i%PL_COLORS.length];
-    h+='<tr><td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+k+'</td>';
-    h+='<td>'+fmt(d.entries)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(d.value)+'</td><td>'+fmtPct(pct)+'</td></tr>';
+
+  // === Build lookup maps for T and U (case-insensitive on A) ===
+  var countByA = {};        // A value → count of rows
+  var hasReturn = {};       // A value → true if any row has TYPE=RETURN
+  var firstOrderRow = {};   // A value → first row index where TYPE=ORDER
+  var firstReturnRow = {};  // A value → first row index where TYPE=RETURN
+
+  for (var i = 0; i < numRows; i++) {
+    var a = String(dataA[i][0]).trim().toUpperCase();
+    if (!a) continue;
+    countByA[a] = (countByA[a] || 0) + 1;
+    var g = String(dataG[i][0]).trim().toUpperCase();
+    if (g === 'RETURN') {
+      hasReturn[a] = true;
+      if (firstReturnRow[a] === undefined) firstReturnRow[a] = i;
+    }
+    if (g === 'ORDER' && firstOrderRow[a] === undefined) firstOrderRow[a] = i;
   }
-  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7"><td style="text-align:left;color:#4fc3f7">TOTAL</td><td style="color:#fff">'+fmt(function(){var s=0;for(var i=0;i<keys.length;i++)s+=byComp[keys[i]].entries;return s;}())+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</td><td>100%</td></tr>';
-  h+='</tbody></table></div></div>';
-  document.getElementById('modalBody').innerHTML=h;
+
+  // === COLUMN T (col 20): R value (VLOOKUP AQ) ===
+  // RULES:
+  // 1. Single ORDER, no RETURN         → T = R value on that row
+  // 2. Multiple ORDERs, no RETURN       → T = R value on 1st ORDER only, rest blank
+  // 3. Any RETURN exists (with/without ORDERs) → T = ALL BLANK
+  var outT = [];
+  for (var i = 0; i < numRows; i++) {
+    var a = String(dataA[i][0]).trim().toUpperCase();
+    if (!a) { outT.push(['']); continue; }
+    if (hasReturn[a]) { outT.push(['']); continue; }            // ANY return → T all blank
+    if (firstOrderRow[a] === i) { outT.push([dataR[i][0]]); continue; } // 1st ORDER → show R
+    outT.push(['']);                                              // rest → blank
+  }
+
+  // === COLUMN U (col 21): S value (SUMIF) ===
+  // RULES:
+  // 1. Single ORDER, no RETURN              → U = S value on that row
+  // 2. Multiple ORDERs, no RETURN            → U = S value on 1st ORDER only, rest blank
+  // 3. RETURN exists (+ ORDERs)              → ORDER rows ALL BLANK, U = S on 1st RETURN only
+  // 4. Single RETURN only (no ORDER)         → U = S value on that row
+  // 5. Multiple RETURNs only (no ORDER)      → U = S value on 1st RETURN only, rest blank
+  var outU = [];
+  for (var i = 0; i < numRows; i++) {
+    var a = String(dataA[i][0]).trim().toUpperCase();
+    if (!a) { outU.push(['']); continue; }
+    if (hasReturn[a]) {
+      outU.push([firstReturnRow[a] === i ? outS[i][0] : '']);
+    } else if (firstOrderRow[a] !== undefined) {
+      outU.push([firstOrderRow[a] === i ? outS[i][0] : '']);
+    } else {
+      outU.push(['']);
+    }
+  }
+
+  // === COLUMN V (col 22): S value on 1st qualifying entry per unique A ===
+  // RULES:
+  // 1. Rows where G = ORDER, RETURN, or SHIPPING SERVICE → V = blank (totally ignored)
+  // 2. Among remaining rows, for each unique A value → V = S value on 1st entry only, rest blank
+  var EXCLUDED_TYPES_V = {'ORDER':1, 'RETURN':1, 'SHIPPING SERVICE':1};
+  var firstQualifyingRow = {};  // A value → first row index where G is NOT in excluded types
+  var allTypesFound = {};       // DEBUG: collect all unique G values
+  var qualifyingCount = 0;      // DEBUG: count qualifying rows
+
+  for (var i = 0; i < numRows; i++) {
+    var a = String(dataA[i][0]).trim().toUpperCase();
+    if (!a) continue;
+    var g = String(dataG[i][0]).trim().toUpperCase();
+    allTypesFound[g] = (allTypesFound[g] || 0) + 1;  // DEBUG
+    if (EXCLUDED_TYPES_V[g]) continue;  // totally ignore these
+    qualifyingCount++;
+    if (firstQualifyingRow[a] === undefined) firstQualifyingRow[a] = i;
+  }
+
+  var vFilledCount = 0;
+  var outV = [];
+  for (var i = 0; i < numRows; i++) {
+    var a = String(dataA[i][0]).trim().toUpperCase();
+    if (!a) { outV.push(['']); continue; }
+    var g = String(dataG[i][0]).trim().toUpperCase();
+    if (EXCLUDED_TYPES_V[g]) { outV.push(['']); continue; }  // excluded type → blank
+    if (firstQualifyingRow[a] === i) {
+      outV.push([outS[i][0]]);  // 1st qualifying entry → show S value
+      vFilledCount++;
+    } else {
+      outV.push(['']);  // not 1st → blank
+    }
+  }
+
+  // Write S(19), T(20), U(21), V(22)
+  ms.getRange(2, 19, numRows, 1).setValues(outS);
+  ms.getRange(2, 20, numRows, 1).setValues(outT);
+  ms.getRange(2, 21, numRows, 1).setValues(outU);
+  ms.getRange(2, 22, numRows, 1).setValues(outV);
+
+  // DEBUG ALERT: show what types exist and how many qualifying rows
+  var typeList = [];
+  var typeKeys = Object.keys(allTypesFound).sort();
+  for (var ti = 0; ti < typeKeys.length; ti++) {
+    typeList.push(typeKeys[ti] + ': ' + allTypesFound[typeKeys[ti]]);
+  }
+  SpreadsheetApp.getUi().alert(
+    'COLUMN V DEBUG:\n' +
+    'Total rows: ' + numRows + '\n' +
+    'Qualifying rows (not Order/Return/Shipping Service): ' + qualifyingCount + '\n' +
+    'Unique A values with qualifying row: ' + Object.keys(firstQualifyingRow).length + '\n' +
+    'V cells filled: ' + vFilledCount + '\n\n' +
+    'ALL TYPE VALUES IN G:\n' + typeList.join('\n')
+  );
 }
 
-// ===== OVERVIEW HELPER: build per-entity P&L data =====
-function _buildOverview(entityType){
-  var pc=DATA.plCards||{};
-  var td=DATA.typeDetail||{};
-  var adData=td['Advertisement']||{byPlatform:{},byCompany:{}};
-  var trData=td['Transfer']||{byPlatform:{},byCompany:{}};
-  var revBy,copBy,retBy,adBy,trBy;
-  if(entityType==='company'){
-    revBy=pc.revenueByCompany||{};copBy=pc.copByCompany||{};retBy=pc.returnsByCompany||{};
-    adBy=adData.byCompany||{};trBy=trData.byCompany||{};
-  } else {
-    revBy=pc.revenueByPlatform||{};copBy=pc.copByPlatform||{};retBy=pc.returnsByPlatform||{};
-    adBy=adData.byPlatform||{};trBy=trData.byPlatform||{};
+// ===================== FAST READ (Sheets API batchGet) =====================
+
+function fastRead(sheetId, tabName, colRanges) {
+  var ranges = [];
+  for (var i = 0; i < colRanges.length; i++) {
+    ranges.push("'" + tabName + "'!" + colRanges[i]);
   }
-  var allKeys={};
-  var sources=[revBy,copBy,retBy,adBy,trBy];
-  for(var s=0;s<sources.length;s++){var ks=Object.keys(sources[s]);for(var i=0;i<ks.length;i++)allKeys[ks[i]]=1;}
-  var result={};
-  var keys=Object.keys(allKeys);
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];
-    var rev=revBy[k]?revBy[k].value:0;
-    var cop=copBy[k]?Math.abs(copBy[k].value):0;
-    var ret=retBy[k]?Math.abs(retBy[k].value):0;
-    var ad=adBy[k]?Math.abs(adBy[k].value):0;
-    var tr=trBy[k]?Math.abs(trBy[k].value):0;
-    var revCount=revBy[k]?revBy[k].entries:0;
-    var retCount=retBy[k]?retBy[k].entries:0;
-    var adCount=adBy[k]?adBy[k].entries:0;
-    var trCount=trBy[k]?trBy[k].entries:0;
-    var profit=rev-cop-ret-ad;
-    result[k]={revenue:rev,cop:cop,returns:ret,ad:ad,transfer:tr,profit:profit,revCount:revCount,retCount:retCount,adCount:adCount,trCount:trCount};
+  var res = Sheets.Spreadsheets.Values.batchGet(sheetId, {ranges: ranges});
+  var vr = res.valueRanges;
+
+  var maxRows = 0;
+  for (var v = 0; v < vr.length; v++) {
+    var len = (vr[v].values || []).length;
+    if (len > maxRows) maxRows = len;
   }
-  return result;
+
+  var rows = [];
+  for (var r = 0; r < maxRows; r++) {
+    var row = [];
+    for (var c = 0; c < vr.length; c++) {
+      var vals = vr[c].values || [];
+      row.push(r < vals.length && vals[r].length > 0 ? vals[r][0] : '');
+    }
+    rows.push(row);
+  }
+  return rows;
 }
 
-// ===== TABLE SORT & FILTER ENGINE =====
-var _sortState={};
-function _sortTable(tableId,colIdx,isNum){
-  var key=tableId+'_'+colIdx;
-  _sortState[key]=_sortState[key]==='asc'?'desc':'asc';
-  var dir=_sortState[key];
-  var table=document.getElementById(tableId);
-  if(!table)return;
-  var tbody=table.querySelector('tbody');
-  var rows=Array.prototype.slice.call(tbody.querySelectorAll('tr:not(.flt-row):not(.tot-row)'));
-  rows.sort(function(a,b){
-    var ac=a.cells[colIdx],bc=b.cells[colIdx];
-    if(!ac||!bc)return 0;
-    var av=ac.getAttribute('data-v'),bv=bc.getAttribute('data-v');
-    if(isNum){av=parseFloat(av)||0;bv=parseFloat(bv)||0;return dir==='asc'?av-bv:bv-av;}
-    av=(av||'').toLowerCase();bv=(bv||'').toLowerCase();
-    return dir==='asc'?(av>bv?1:av<bv?-1:0):(av<bv?1:av>bv?-1:0);
-  });
-  for(var i=0;i<rows.length;i++)tbody.appendChild(rows[i]);
-  // Move total row to end
-  var totRow=tbody.querySelector('.tot-row');
-  if(totRow)tbody.appendChild(totRow);
-  // Update arrow
-  var ths=table.querySelectorAll('thead th');
-  for(var t=0;t<ths.length;t++){var ar=ths[t].querySelector('.arrow');if(ar)ar.textContent='';}
-  var th=ths[colIdx];if(th){var ar=th.querySelector('.arrow');if(ar)ar.textContent=dir==='asc'?'\u25B2':'\u25BC';}
+// ===================== SYNC ONE SOURCE =====================
+
+function syncOne(name) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ms = ss.getSheetByName(MASTER_TAB);
+  if (!ms) { SpreadsheetApp.getUi().alert('Run Setup Sheet first.'); return; }
+
+  var p = PLATFORMS[name];
+
+  var raw;
+  try {
+    raw = fastRead(p.id, p.tab, p.cols);
+  } catch(e) {
+    SpreadsheetApp.getUi().alert(name + ' error: ' + e.message);
+    return;
+  }
+
+  // Keep ALL rows where column A (TOTAL) is not blank — NO dedup
+  var newRows = [];
+  for (var i = 0; i < raw.length; i++) {
+    var key = String(raw[i][0]).trim();
+    if (!key) continue; // Skip blank TOTAL only
+    newRows.push(raw[i]);
+  }
+
+  // Fix negative Transfer L values for Amazon
+  _fixTransferL(newRows);
+
+  if (newRows.length > 0) {
+    var lr = Math.max(ms.getLastRow(), 1);
+    ms.getRange(lr + 1, 1, newRows.length, 12).setValues(newRows);
+  }
+
+  SpreadsheetApp.getUi().alert(name + ': ' + raw.length + ' pulled, ' + newRows.length + ' added');
 }
 
-function _applyColFilter(tableId){
-  var table=document.getElementById(tableId);
-  if(!table)return;
-  var fltRow=table.querySelector('.flt-row');
-  if(!fltRow)return;
-  var cells=fltRow.cells;
-  var tbody=table.querySelector('tbody');
-  var rows=tbody.querySelectorAll('tr:not(.flt-row):not(.tot-row)');
-  for(var r=0;r<rows.length;r++){
-    var show=true;
-    for(var c=0;c<cells.length;c++){
-      var inp=cells[c].querySelector('input');
-      var sel=cells[c].querySelector('select');
-      if(!inp)continue;
-      var fv=inp.value.trim();
-      if(!fv)continue;
-      var dv=rows[r].cells[c]?rows[r].cells[c].getAttribute('data-v'):'';
-      if(sel){
-        var mode=sel.value;
-        if(mode==='h2l'||mode==='l2h')continue; // sorting handled after filter
-        var nf=parseFloat(fv),nd=parseFloat(dv)||0;
-        if(isNaN(nf))continue;
-        if(mode==='gte'&&nd<nf)show=false;
-        if(mode==='lte'&&nd>nf)show=false;
-      } else {
-        if(dv.toLowerCase().indexOf(fv.toLowerCase())<0)show=false;
+// ===================== SYNC ALL =====================
+
+function syncAll() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ms = ss.getSheetByName(MASTER_TAB);
+  if (!ms) { SpreadsheetApp.getUi().alert('Run Setup Sheet first.'); return; }
+
+  var names = Object.keys(PLATFORMS);
+  var totalP = 0, totalA = 0;
+
+  for (var i = 0; i < names.length; i++) {
+    var name = names[i];
+    var p = PLATFORMS[name];
+
+    try {
+      var raw = fastRead(p.id, p.tab, p.cols);
+      totalP += raw.length;
+
+      // Keep ALL rows where column A is not blank — NO dedup
+      var newRows = [];
+      for (var r = 0; r < raw.length; r++) {
+        var key = String(raw[r][0]).trim();
+        if (!key) continue;
+        newRows.push(raw[r]);
+      }
+
+      // Fix negative Transfer L values for Amazon
+      _fixTransferL(newRows);
+
+      if (newRows.length > 0) {
+        var lr = Math.max(ms.getLastRow(), 1);
+        ms.getRange(lr + 1, 1, newRows.length, 12).setValues(newRows);
+        totalA += newRows.length;
+      }
+
+      Logger.log(name + ': ' + raw.length + ' pulled, ' + newRows.length + ' added');
+      SpreadsheetApp.flush();
+    } catch(e) {
+      Logger.log('ERROR ' + name + ': ' + e.message);
+    }
+  }
+
+  SpreadsheetApp.getUi().alert('All done!\nPulled: ' + totalP + '\nAdded: ' + totalA);
+}
+
+// ===================== GET EXISTING TOTALS =====================
+
+function getExisting(ms) {
+  var map = {};
+  var lr = ms.getLastRow();
+  if (lr < 2) return map;
+  var vals = ms.getRange(2, 1, lr - 1, 1).getValues();
+  for (var i = 0; i < vals.length; i++) {
+    var k = String(vals[i][0]).trim();
+    if (k) map[k] = true;
+  }
+  return map;
+}
+
+// ===================== REMOVE DUPLICATES =====================
+
+function removeDuplicates() {
+  // Dedup DISABLED — same order can have multiple entries (ORDER, RETURN) with same TOTAL value
+  // The original QUERY formula keeps ALL rows (SELECT * WHERE Col1 IS NOT NULL)
+  SpreadsheetApp.getUi().alert('Dedup is disabled.\nSame order can have multiple entries (ORDER + RETURN) with different amounts.\nUse "Clear & Run Fresh" to re-sync all data.');
+}
+
+// ===================== RUN EVERYTHING =====================
+
+function runEverything() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ms = ss.getSheetByName(MASTER_TAB);
+  if (!ms) { ms = ss.insertSheet(MASTER_TAB); }
+
+  var log = [];
+  var totalP = 0, totalA = 0;
+
+  var names = Object.keys(PLATFORMS);
+  for (var i = 0; i < names.length; i++) {
+    var name = names[i];
+    var p = PLATFORMS[name];
+    try {
+      var raw = fastRead(p.id, p.tab, p.cols);
+      totalP += raw.length;
+      // Keep ALL rows where column A is not blank — NO dedup
+      var newRows = [];
+      for (var r = 0; r < raw.length; r++) {
+        var key = String(raw[r][0]).trim();
+        if (!key) continue;
+        newRows.push(raw[r]);
+      }
+      // Fix negative Transfer L values for Amazon
+      _fixTransferL(newRows);
+      if (newRows.length > 0) {
+        var lr = Math.max(ms.getLastRow(), 1);
+        ms.getRange(lr + 1, 1, newRows.length, 12).setValues(newRows);
+        totalA += newRows.length;
+      }
+      log.push(name + ': +' + newRows.length);
+      SpreadsheetApp.flush();
+    } catch(e) {
+      log.push(name + ' ERR: ' + e.message);
+    }
+  }
+
+  // NO dedup — same order can have ORDER + RETURN entries with same TOTAL value
+
+  // VLOOKUP: fill columns M-R from Master SKU FILE
+  try {
+    var lrV = ms.getLastRow();
+    if (lrV >= 2) {
+      var lookupCols = ['AA2:AA','AC2:AC','AD2:AD','AG2:AG','AJ2:AJ','AM2:AM','AQ2:AQ'];
+      var lRanges = [];
+      for (var li = 0; li < lookupCols.length; li++) {
+        lRanges.push("'" + SKU_TAB + "'!" + lookupCols[li]);
+      }
+      var lRes = Sheets.Spreadsheets.Values.batchGet(SKU_SHEET_ID, {ranges: lRanges});
+      var lVr = lRes.valueRanges;
+      var maxL = 0;
+      for (var lv = 0; lv < lVr.length; lv++) { var ll = (lVr[lv].values || []).length; if (ll > maxL) maxL = ll; }
+
+      var lMap = {};
+      for (var lr2 = 0; lr2 < maxL; lr2++) {
+        var kArr = (lVr[0].values || []);
+        var lk = lr2 < kArr.length && kArr[lr2].length > 0 ? String(kArr[lr2][0]).trim().toUpperCase() : '';
+        if (!lk) continue;
+        var lv2 = [];
+        for (var lc = 1; lc < lVr.length; lc++) {
+          var lcv = (lVr[lc].values || []);
+          lv2.push(lr2 < lcv.length && (lcv[lr2] || []).length > 0 ? lcv[lr2][0] : '');
+        }
+        if (!lMap[lk]) lMap[lk] = lv2;
+      }
+
+      var lKeys = ms.getRange(2, 10, lrV - 1, 1).getValues();
+      var lOut = [];
+      var lMatched = 0;
+      for (var li2 = 0; li2 < lKeys.length; li2++) {
+        var lk2 = String(lKeys[li2][0]).trim().toUpperCase();
+        if (lk2 && lMap[lk2]) { lOut.push(lMap[lk2]); lMatched++; }
+        else { lOut.push(['','','','','','']); }
+      }
+      if (lOut.length > 0) {
+        ms.getRange(2, 13, lOut.length, 6).setValues(lOut);
+      }
+      log.push('VLOOKUP: ' + lMatched + ' matched');
+    }
+  } catch(e) { log.push('VLOOKUP ERR: ' + e.message); }
+
+  // Compute formulas: R, S, T, U
+  try {
+    computeFormulas();
+    log.push('Formulas: S,T,U computed');
+  } catch(e) { log.push('Formulas ERR: ' + e.message); }
+
+  ui.alert('ALL DONE!\nPulled: ' + totalP + '\nAdded: ' + totalA + '\n' + log.join('\n'));
+}
+
+// ===================== CLEAR & RUN FRESH =====================
+
+function clearAndRun() {
+  var ui = SpreadsheetApp.getUi();
+  var resp = ui.alert('This will DELETE all data and re-sync everything.\n\nContinue?', ui.ButtonSet.YES_NO);
+  if (resp !== ui.Button.YES) return;
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ms = ss.getSheetByName(MASTER_TAB);
+  if (ms) {
+    var lr = ms.getLastRow();
+    if (lr > 1) {
+      ms.getRange(2, 1, lr - 1, ms.getMaxColumns()).clearContent();
+      SpreadsheetApp.flush();
+    }
+  }
+  runEverything();
+}
+
+// ===================== SETUP =====================
+
+function setupSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ms = ss.getSheetByName(MASTER_TAB) || ss.insertSheet(MASTER_TAB);
+  ms.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  var hr = ms.getRange(1, 1, 1, HEADERS.length);
+  hr.setFontWeight('bold');
+  hr.setBackground('#4472C4');
+  hr.setFontColor('white');
+  SpreadsheetApp.getUi().alert(MASTER_TAB + ' tab ready! Headers set in row 1.');
+}
+
+// ===================== AUTO-REFRESH =====================
+
+function setupAutoRefresh() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'autoRefresh') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  ScriptApp.newTrigger('autoRefresh').timeBased().everyMinutes(1).create();
+  SpreadsheetApp.getUi().alert('Auto-refresh ON! Runs every 1 minute.');
+}
+
+function stopAutoRefresh() {
+  var triggers = ScriptApp.getProjectTriggers();
+  var removed = 0;
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'autoRefresh') {
+      ScriptApp.deleteTrigger(triggers[i]);
+      removed++;
+    }
+  }
+  SpreadsheetApp.getUi().alert('Auto-refresh OFF. Removed ' + removed + ' trigger(s).');
+}
+
+function autoRefresh() {
+  // Auto-refresh does a CLEAR + full re-pull to avoid duplicating rows on each run
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) { Logger.log('autoRefresh skipped — previous run still going.'); return; }
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ms = ss.getSheetByName(MASTER_TAB);
+    if (!ms) { lock.releaseLock(); return; }
+
+    // Clear existing data (keep headers)
+    var lr = ms.getLastRow();
+    if (lr > 1) {
+      ms.getRange(2, 1, lr - 1, ms.getMaxColumns()).clearContent();
+      SpreadsheetApp.flush();
+    }
+
+    // Re-pull ALL data from all sources — NO dedup
+    var names = Object.keys(PLATFORMS);
+    for (var i = 0; i < names.length; i++) {
+      var name = names[i];
+      var p = PLATFORMS[name];
+      try {
+        var raw = fastRead(p.id, p.tab, p.cols);
+        var newRows = [];
+        for (var r = 0; r < raw.length; r++) {
+          var key = String(raw[r][0]).trim();
+          if (!key) continue;
+          newRows.push(raw[r]);
+        }
+        // Fix negative Transfer L values for Amazon
+        _fixTransferL(newRows);
+        if (newRows.length > 0) {
+          var lrNow = Math.max(ms.getLastRow(), 1);
+          ms.getRange(lrNow + 1, 1, newRows.length, 12).setValues(newRows);
+        }
+        SpreadsheetApp.flush();
+      } catch(e) {
+        Logger.log('autoRefresh ' + name + ' ERR: ' + e.message);
       }
     }
-    rows[r].style.display=show?'':'none';
+
+    // Re-run VLOOKUP and formulas after fresh pull
+    try { vlookupSKUsilent(); } catch(e) { Logger.log('autoRefresh VLOOKUP ERR: ' + e.message); }
+    try { computeFormulas(); } catch(e) { Logger.log('autoRefresh Formulas ERR: ' + e.message); }
+
+    lock.releaseLock();
+  } catch(e) {
+    Logger.log('autoRefresh ERR: ' + e.message);
+    lock.releaseLock();
   }
-  // Handle h2l/l2h sorting from filter dropdowns
-  for(var c2=0;c2<cells.length;c2++){
-    var sel2=cells[c2].querySelector('select');
-    if(!sel2)continue;
-    var mode2=sel2.value;
-    if(mode2==='h2l'||mode2==='l2h'){
-      var visRows=[];
-      for(var r2=0;r2<rows.length;r2++){if(rows[r2].style.display!=='none')visRows.push(rows[r2]);}
-      visRows.sort(function(a,b){
-        var av=parseFloat(a.cells[c2]?a.cells[c2].getAttribute('data-v'):0)||0;
-        var bv=parseFloat(b.cells[c2]?b.cells[c2].getAttribute('data-v'):0)||0;
-        return mode2==='h2l'?bv-av:av-bv;
-      });
-      for(var r3=0;r3<visRows.length;r3++)tbody.appendChild(visRows[r3]);
-      var totRow=tbody.querySelector('.tot-row');
-      if(totRow)tbody.appendChild(totRow);
-      break;
+}
+
+// Silent version of vlookupSKU (no UI alerts) for use in autoRefresh
+function vlookupSKUsilent() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ms = ss.getSheetByName(MASTER_TAB);
+  if (!ms) return;
+  var lr = ms.getLastRow();
+  if (lr < 2) return;
+
+  var lookupCols = ['AA2:AA','AC2:AC','AD2:AD','AG2:AG','AJ2:AJ','AM2:AM','AQ2:AQ'];
+  var ranges = [];
+  for (var i = 0; i < lookupCols.length; i++) {
+    ranges.push("'" + SKU_TAB + "'!" + lookupCols[i]);
+  }
+  var res = Sheets.Spreadsheets.Values.batchGet(SKU_SHEET_ID, {ranges: ranges});
+  var vr = res.valueRanges;
+  var maxLookup = 0;
+  for (var v = 0; v < vr.length; v++) { var len = (vr[v].values || []).length; if (len > maxLookup) maxLookup = len; }
+
+  var lookupMap = {};
+  for (var r = 0; r < maxLookup; r++) {
+    var keyArr = (vr[0].values || []);
+    var key = r < keyArr.length && keyArr[r].length > 0 ? String(keyArr[r][0]).trim().toUpperCase() : '';
+    if (!key) continue;
+    var vals = [];
+    for (var c = 1; c < vr.length; c++) {
+      var cv = (vr[c].values || []);
+      vals.push(r < cv.length && (cv[r] || []).length > 0 ? cv[r][0] : '');
+    }
+    if (!lookupMap[key]) lookupMap[key] = vals;
+  }
+
+  var keys = ms.getRange(2, 10, lr - 1, 1).getValues();
+  var output = [];
+  for (var i = 0; i < keys.length; i++) {
+    var k = String(keys[i][0]).trim().toUpperCase();
+    if (k && lookupMap[k]) { output.push(lookupMap[k]); }
+    else { output.push(['','','','','','']); }
+  }
+  if (output.length > 0) {
+    ms.getRange(2, 13, output.length, 6).setValues(output);
+  }
+}
+
+// ===================== WEB APP API (doGet) =====================
+
+function doGet(e) {
+  try {
+    if (e && e.parameter && e.parameter.test === '1') {
+      return ContentService.createTextOutput(JSON.stringify({ok:true,ts:new Date().toISOString()})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+    var tab = MASTER_TAB;
+    var tz = Session.getScriptTimeZone();
+    var now = new Date();
+
+    // Month filter: ?month=January,February&year=2025 (supports comma-separated months)
+    var filterMonthRaw = (e && e.parameter && e.parameter.month) ? String(e.parameter.month).trim() : '';
+    var filterMonths = {};
+    if (filterMonthRaw) {
+      var parts = filterMonthRaw.split(',');
+      for (var fm = 0; fm < parts.length; fm++) {
+        var fmv = parts[fm].trim().toLowerCase();
+        if (fmv) filterMonths[fmv] = true;
+      }
+    }
+    var hasMonthFilter = Object.keys(filterMonths).length > 0;
+    var filterYear = (e && e.parameter && e.parameter.year) ? String(e.parameter.year).trim() : '';
+
+    // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT, T(col20), U(col21), O=Category, P=SubCategory, Q=Product
+    var colRanges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L','T2:T','U2:U','O2:O','P2:P','Q2:Q'];
+    var ranges = [];
+    for (var i = 0; i < colRanges.length; i++) ranges.push("'" + tab + "'!" + colRanges[i]);
+    var res = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: ranges, valueRenderOption: 'UNFORMATTED_VALUE'});
+    var vr = res.valueRanges;
+    var maxRows = 0;
+    for (var v = 0; v < vr.length; v++) { var len = (vr[v].values || []).length; if (len > maxRows) maxRows = len; }
+
+    if (maxRows === 0) {
+      return _jsonResp({summary:{},byPlatform:{},byCompany:{},byType:{},byType2:{},byMonth:[],daily:[],plBreakdown:{revenue:0,costs:0,netPL:0},timestamp:new Date().toISOString()});
+    }
+
+    var cols = [];
+    for (var c = 0; c < vr.length; c++) cols.push(vr[c].values || []);
+    // cols: 0=total, 1=sno, 2=year, 3=month, 4=platform, 5=company, 6=type, 7=type2, 8=orderId, 9=sku, 10=qty, 11=amount, 12=T(col20), 13=U(col21), 14=category(O), 15=subCategory(P), 16=product(Q)
+
+    var summary = {totalEntries:0, totalQty:0, totalAmount:0};
+    var byPlatform = {}, byCompany = {}, byType = {}, byType2 = {}, byMonthMap = {}, dailyMap = {};
+    var typeDetail = {};  // per-type drill-down: typeDetail[type] = {total, byPlatform:{}, byCompany:{}}
+    var plRevenue = 0, plCosts = 0, plCOP = 0, plCardRevenue = 0, plReturns = 0;
+    var plRevenueByPlatform = {}, plRevenueByCompany = {};
+    var plCOPByPlatform = {}, plCOPByCompany = {};
+    var plReturnsByPlatform = {}, plReturnsByCompany = {};
+    var byCategory = {}, bySubCategory = {}, byProduct = {}, bySKU = {};
+    var seenEntries = {};
+
+    // Collect ALL unique months/years (before filtering) for dropdown population
+    var allMonthNames = {}, allYears = {}, monthsByYear = {};
+    for (var r0 = 0; r0 < maxRows; r0++) {
+      var _t = r0 < cols[0].length && cols[0][r0].length > 0 ? cols[0][r0][0] : '';
+      if (!_t || String(_t).trim() === '') continue;
+      var _y = String(r0 < cols[2].length && cols[2][r0].length > 0 ? cols[2][r0][0] : '').trim();
+      var _m = String(r0 < cols[3].length && cols[3][r0].length > 0 ? cols[3][r0][0] : '').trim();
+      if (_m) allMonthNames[_m] = true;
+      if (_y) allYears[_y] = true;
+      if (_y && _m) {
+        if (!monthsByYear[_y]) monthsByYear[_y] = {};
+        monthsByYear[_y][_m] = true;
+      }
+    }
+    // Convert monthsByYear sets to sorted arrays (calendar order)
+    var monthOrder = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var monthsByYearSorted = {};
+    var yKeys = Object.keys(monthsByYear);
+    for (var yi = 0; yi < yKeys.length; yi++) {
+      var yKey = yKeys[yi];
+      var yMonths = [];
+      for (var moi = 0; moi < monthOrder.length; moi++) {
+        if (monthsByYear[yKey][monthOrder[moi]]) yMonths.push(monthOrder[moi]);
+      }
+      var extraM = Object.keys(monthsByYear[yKey]);
+      for (var emi = 0; emi < extraM.length; emi++) {
+        if (yMonths.indexOf(extraM[emi]) === -1) yMonths.push(extraM[emi]);
+      }
+      monthsByYearSorted[yKey] = yMonths;
+    }
+
+    for (var r = 0; r < maxRows; r++) {
+      var total = r < cols[0].length && cols[0][r].length > 0 ? cols[0][r][0] : '';
+      if (!total || String(total).trim() === '') continue;
+
+      var year = String(r < cols[2].length && cols[2][r].length > 0 ? cols[2][r][0] : '').trim();
+      var month = String(r < cols[3].length && cols[3][r].length > 0 ? cols[3][r][0] : '').trim();
+      var platform = String(r < cols[4].length && cols[4][r].length > 0 ? cols[4][r][0] : '').trim() || 'Unknown';
+      var company = String(r < cols[5].length && cols[5][r].length > 0 ? cols[5][r][0] : '').trim() || 'Unknown';
+      var type = String(r < cols[6].length && cols[6][r].length > 0 ? cols[6][r][0] : '').trim() || 'Unknown';
+      var type2 = String(r < cols[7].length && cols[7][r].length > 0 ? cols[7][r][0] : '').trim() || 'Unknown';
+      var qty = _toNum(r < cols[10].length && cols[10][r].length > 0 ? cols[10][r][0] : 0);
+      var amount = _toNum(r < cols[11].length && cols[11][r].length > 0 ? cols[11][r][0] : 0);
+      var colT = _toNum(r < cols[12].length && cols[12][r].length > 0 ? cols[12][r][0] : 0);
+      var colU = _toNum(r < cols[13].length && cols[13][r].length > 0 ? cols[13][r][0] : 0);
+      var category = String(r < cols[14].length && cols[14][r].length > 0 ? cols[14][r][0] : '').trim() || 'Unknown';
+      var subCategory = String(r < cols[15].length && cols[15][r].length > 0 ? cols[15][r][0] : '').trim() || 'Unknown';
+      var product = String(r < cols[16].length && cols[16][r].length > 0 ? cols[16][r][0] : '').trim() || 'Unknown';
+      var sku = String(r < cols[9].length && cols[9][r].length > 0 ? cols[9][r][0] : '').trim() || 'Unknown';
+
+      // Convert Transfer values to positive
+      var typeUpper = type.toUpperCase();
+      if (typeUpper === 'TRANSFER') {
+        amount = Math.abs(amount);
+        colT = Math.abs(colT);
+        colU = Math.abs(colU);
+      }
+
+      // Month key for grouping
+      var monthKey = '';
+      if (year && month) {
+        var mn = _monthToNum(month);
+        monthKey = year + '-' + mn;
+      }
+
+      // Month/Year filter (column D = month name, column C = year)
+      if (hasMonthFilter && !filterMonths[String(month).trim().toLowerCase()]) continue;
+      if (filterYear && year !== filterYear) continue;
+
+      // Summary
+      summary.totalEntries++;
+      summary.totalQty += qty;
+      summary.totalAmount += amount;
+
+      // P&L (old logic based on REVENUE_TYPES — kept for byType section)
+      if (REVENUE_TYPES[type]) {
+        plRevenue += amount;
+      } else {
+        plCosts += amount;
+      }
+
+      // NEW P&L cards: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order", Returns = SUM(U) where G="Return"
+      if (typeUpper === 'ORDER') {
+        plCardRevenue += colU;
+        plCOP += colT;
+        // Per-platform Revenue/COP drill-down
+        if (!plRevenueByPlatform[platform]) plRevenueByPlatform[platform] = {value:0, entries:0, companies:{}};
+        plRevenueByPlatform[platform].value += colU;
+        plRevenueByPlatform[platform].entries++;
+        if (!plRevenueByPlatform[platform].companies[company]) plRevenueByPlatform[platform].companies[company] = {value:0, entries:0};
+        plRevenueByPlatform[platform].companies[company].value += colU;
+        plRevenueByPlatform[platform].companies[company].entries++;
+        if (!plCOPByPlatform[platform]) plCOPByPlatform[platform] = {value:0, entries:0, companies:{}};
+        plCOPByPlatform[platform].value += colT;
+        plCOPByPlatform[platform].entries++;
+        if (!plCOPByPlatform[platform].companies[company]) plCOPByPlatform[platform].companies[company] = {value:0, entries:0};
+        plCOPByPlatform[platform].companies[company].value += colT;
+        plCOPByPlatform[platform].companies[company].entries++;
+        // Per-company Revenue/COP drill-down
+        if (!plRevenueByCompany[company]) plRevenueByCompany[company] = {value:0, entries:0};
+        plRevenueByCompany[company].value += colU;
+        plRevenueByCompany[company].entries++;
+        if (!plCOPByCompany[company]) plCOPByCompany[company] = {value:0, entries:0};
+        plCOPByCompany[company].value += colT;
+        plCOPByCompany[company].entries++;
+      }
+      if (typeUpper === 'RETURN') {
+        plReturns += colU;
+        // Per-platform Returns drill-down
+        if (!plReturnsByPlatform[platform]) plReturnsByPlatform[platform] = {value:0, entries:0, companies:{}};
+        plReturnsByPlatform[platform].value += colU;
+        plReturnsByPlatform[platform].entries++;
+        if (!plReturnsByPlatform[platform].companies[company]) plReturnsByPlatform[platform].companies[company] = {value:0, entries:0};
+        plReturnsByPlatform[platform].companies[company].value += colU;
+        plReturnsByPlatform[platform].companies[company].entries++;
+        // Per-company Returns drill-down
+        if (!plReturnsByCompany[company]) plReturnsByCompany[company] = {value:0, entries:0};
+        plReturnsByCompany[company].value += colU;
+        plReturnsByCompany[company].entries++;
+      }
+
+      // byCategory, bySubCategory, byProduct, bySKU: Revenue/COP/Returns + counts
+      if (typeUpper === 'ORDER') {
+        if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
+        byCategory[category].revenue += colU;
+        byCategory[category].cop += colT;
+        byCategory[category].revCount++;
+        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
+        bySubCategory[subCategory].revenue += colU;
+        bySubCategory[subCategory].cop += colT;
+        bySubCategory[subCategory].revCount++;
+        if (!byProduct[product]) byProduct[product] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
+        byProduct[product].revenue += colU;
+        byProduct[product].cop += colT;
+        byProduct[product].revCount++;
+        var skuKey = platform + ' | ' + company + ' | ' + sku;
+        if (!bySKU[skuKey]) bySKU[skuKey] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0, platform:platform, company:company, sku:sku, category:category, product:product};
+        bySKU[skuKey].revenue += colU;
+        bySKU[skuKey].cop += colT;
+        bySKU[skuKey].revCount++;
+      }
+      if (typeUpper === 'RETURN') {
+        if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
+        byCategory[category].returns += colU;
+        byCategory[category].retCount++;
+        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
+        bySubCategory[subCategory].returns += colU;
+        bySubCategory[subCategory].retCount++;
+        if (!byProduct[product]) byProduct[product] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
+        byProduct[product].returns += colU;
+        byProduct[product].retCount++;
+        var skuKey2 = platform + ' | ' + company + ' | ' + sku;
+        if (!bySKU[skuKey2]) bySKU[skuKey2] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0, platform:platform, company:company, sku:sku, category:category, product:product};
+        bySKU[skuKey2].returns += colU;
+        bySKU[skuKey2].retCount++;
+      }
+
+      // byPlatform
+      if (!byPlatform[platform]) byPlatform[platform] = {entries:0, qty:0, amount:0};
+      byPlatform[platform].entries++;
+      byPlatform[platform].qty += qty;
+      byPlatform[platform].amount += amount;
+
+      // byCompany
+      if (!byCompany[company]) byCompany[company] = {entries:0, qty:0, amount:0};
+      byCompany[company].entries++;
+      byCompany[company].qty += qty;
+      byCompany[company].amount += amount;
+
+      // byType
+      if (!byType[type]) byType[type] = {entries:0, qty:0, amount:0};
+      byType[type].entries++;
+      byType[type].qty += qty;
+      byType[type].amount += amount;
+
+      // typeDetail: per-type drill-down by platform and company (using column L amount)
+      if (!typeDetail[type]) typeDetail[type] = {total:0, entries:0, byPlatform:{}, byCompany:{}};
+      typeDetail[type].total += amount;
+      typeDetail[type].entries++;
+      if (!typeDetail[type].byPlatform[platform]) typeDetail[type].byPlatform[platform] = {value:0, entries:0, byCompany:{}};
+      typeDetail[type].byPlatform[platform].value += amount;
+      typeDetail[type].byPlatform[platform].entries++;
+      if (!typeDetail[type].byPlatform[platform].byCompany[company]) typeDetail[type].byPlatform[platform].byCompany[company] = {value:0, entries:0};
+      typeDetail[type].byPlatform[platform].byCompany[company].value += amount;
+      typeDetail[type].byPlatform[platform].byCompany[company].entries++;
+      if (!typeDetail[type].byCompany[company]) typeDetail[type].byCompany[company] = {value:0, entries:0};
+      typeDetail[type].byCompany[company].value += amount;
+      typeDetail[type].byCompany[company].entries++;
+
+      // byType2
+      if (!byType2[type2]) byType2[type2] = {entries:0, qty:0, amount:0};
+      byType2[type2].entries++;
+      byType2[type2].qty += qty;
+      byType2[type2].amount += amount;
+
+      // byMonth
+      if (monthKey) {
+        if (!byMonthMap[monthKey]) byMonthMap[monthKey] = {month:monthKey, entries:0, qty:0, amount:0, revenue:0, costs:0};
+        byMonthMap[monthKey].entries++;
+        byMonthMap[monthKey].qty += qty;
+        byMonthMap[monthKey].amount += amount;
+        if (REVENUE_TYPES[type]) byMonthMap[monthKey].revenue += amount;
+        else byMonthMap[monthKey].costs += amount;
+      }
+    }
+
+    // Round
+    summary.totalAmount = Math.round(summary.totalAmount * 100) / 100;
+    summary.totalQty = Math.round(summary.totalQty * 100) / 100;
+    for (var k in byPlatform) { byPlatform[k].amount = Math.round(byPlatform[k].amount * 100) / 100; byPlatform[k].qty = Math.round(byPlatform[k].qty * 100) / 100; }
+    for (var k in byCompany) { byCompany[k].amount = Math.round(byCompany[k].amount * 100) / 100; byCompany[k].qty = Math.round(byCompany[k].qty * 100) / 100; }
+    for (var k in byType) { byType[k].amount = Math.round(byType[k].amount * 100) / 100; byType[k].qty = Math.round(byType[k].qty * 100) / 100; }
+    // Round byCategory/bySubCategory
+    for (var k in byCategory) { byCategory[k].revenue = Math.round(byCategory[k].revenue * 100) / 100; byCategory[k].cop = Math.round(byCategory[k].cop * 100) / 100; byCategory[k].returns = Math.round(byCategory[k].returns * 100) / 100; }
+    for (var k in bySubCategory) { bySubCategory[k].revenue = Math.round(bySubCategory[k].revenue * 100) / 100; bySubCategory[k].cop = Math.round(bySubCategory[k].cop * 100) / 100; bySubCategory[k].returns = Math.round(bySubCategory[k].returns * 100) / 100; }
+    for (var k in byProduct) { byProduct[k].revenue = Math.round(byProduct[k].revenue * 100) / 100; byProduct[k].cop = Math.round(byProduct[k].cop * 100) / 100; byProduct[k].returns = Math.round(byProduct[k].returns * 100) / 100; }
+    for (var k in bySKU) { bySKU[k].revenue = Math.round(bySKU[k].revenue * 100) / 100; bySKU[k].cop = Math.round(bySKU[k].cop * 100) / 100; bySKU[k].returns = Math.round(bySKU[k].returns * 100) / 100; }
+    // Round typeDetail
+    for (var td in typeDetail) {
+      typeDetail[td].total = Math.round(typeDetail[td].total * 100) / 100;
+      for (var tdp in typeDetail[td].byPlatform) {
+        typeDetail[td].byPlatform[tdp].value = Math.round(typeDetail[td].byPlatform[tdp].value * 100) / 100;
+        for (var tdpc in typeDetail[td].byPlatform[tdp].byCompany) { typeDetail[td].byPlatform[tdp].byCompany[tdpc].value = Math.round(typeDetail[td].byPlatform[tdp].byCompany[tdpc].value * 100) / 100; }
+      }
+      for (var tdc in typeDetail[td].byCompany) { typeDetail[td].byCompany[tdc].value = Math.round(typeDetail[td].byCompany[tdc].value * 100) / 100; }
+    }
+    for (var k in byType2) { byType2[k].amount = Math.round(byType2[k].amount * 100) / 100; byType2[k].qty = Math.round(byType2[k].qty * 100) / 100; }
+
+    var byMonth = [];
+    var mKeys = Object.keys(byMonthMap).sort();
+    for (var i = 0; i < mKeys.length; i++) {
+      var m = byMonthMap[mKeys[i]];
+      m.amount = Math.round(m.amount * 100) / 100;
+      m.revenue = Math.round(m.revenue * 100) / 100;
+      m.costs = Math.round(m.costs * 100) / 100;
+      m.qty = Math.round(m.qty * 100) / 100;
+      byMonth.push(m);
+    }
+
+    var plBreakdown = {
+      revenue: Math.round(plRevenue * 100) / 100,
+      costs: Math.round(plCosts * 100) / 100,
+      netPL: Math.round((plRevenue + plCosts) * 100) / 100
+    };
+
+    // NEW P&L cards data: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order", Returns = SUM(U) where G="Return"
+    // Round per-platform/company values
+    for (var rp in plRevenueByPlatform) { plRevenueByPlatform[rp].value = Math.round(plRevenueByPlatform[rp].value * 100) / 100; }
+    for (var cp in plCOPByPlatform) { plCOPByPlatform[cp].value = Math.round(plCOPByPlatform[cp].value * 100) / 100; }
+    for (var rc in plRevenueByCompany) { plRevenueByCompany[rc].value = Math.round(plRevenueByCompany[rc].value * 100) / 100; }
+    for (var cc in plCOPByCompany) { plCOPByCompany[cc].value = Math.round(plCOPByCompany[cc].value * 100) / 100; }
+    for (var rtp in plReturnsByPlatform) { plReturnsByPlatform[rtp].value = Math.round(plReturnsByPlatform[rtp].value * 100) / 100; }
+    for (var rtc in plReturnsByCompany) { plReturnsByCompany[rtc].value = Math.round(plReturnsByCompany[rtc].value * 100) / 100; }
+
+    var plCards = {
+      revenue: Math.round(plCardRevenue * 100) / 100,
+      cop: Math.round(plCOP * 100) / 100,
+      returns: Math.round(plReturns * 100) / 100,
+      revenueByPlatform: plRevenueByPlatform,
+      copByPlatform: plCOPByPlatform,
+      returnsByPlatform: plReturnsByPlatform,
+      revenueByCompany: plRevenueByCompany,
+      copByCompany: plCOPByCompany,
+      returnsByCompany: plReturnsByCompany
+    };
+
+    // Sort months in calendar order for dropdown
+    var sortedMonths = [];
+    for (var mi = 0; mi < monthOrder.length; mi++) {
+      if (allMonthNames[monthOrder[mi]]) sortedMonths.push(monthOrder[mi]);
+    }
+    var amK = Object.keys(allMonthNames);
+    for (var ai = 0; ai < amK.length; ai++) {
+      if (sortedMonths.indexOf(amK[ai]) === -1) sortedMonths.push(amK[ai]);
+    }
+
+    var result = {
+      summary: summary,
+      byPlatform: byPlatform,
+      byCompany: byCompany,
+      byType: byType,
+      byType2: byType2,
+      byMonth: byMonth,
+      plBreakdown: plBreakdown,
+      plCards: plCards,
+      typeDetail: typeDetail,
+      byCategory: byCategory,
+      bySubCategory: bySubCategory,
+      byProduct: byProduct,
+      bySKU: bySKU,
+      platforms: Object.keys(byPlatform).sort(),
+      companies: Object.keys(byCompany).sort(),
+      types: Object.keys(byType).sort(),
+      availableMonths: sortedMonths,
+      availableYears: Object.keys(allYears).sort(),
+      monthsByYear: monthsByYearSorted,
+      timestamp: new Date().toISOString()
+    };
+
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return _jsonResp({ error: err.message });
+  }
+}
+
+function _jsonResp(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+function _toNum(v) { if (v === '' || v === null || v === undefined) return 0; var n = Number(v); return isNaN(n) ? 0 : n; }
+
+// Fix Transfer column L: if platform contains "Amazon" and type = "Transfer", make L positive
+function _fixTransferL(rows) {
+  for (var i = 0; i < rows.length; i++) {
+    var plat = String(rows[i][4] || '').trim().toUpperCase();
+    var typ = String(rows[i][6] || '').trim().toUpperCase();
+    if (plat.indexOf('AMAZON') > -1 && typ === 'TRANSFER') {
+      var lVal = Number(rows[i][11]);
+      if (!isNaN(lVal) && lVal < 0) rows[i][11] = Math.abs(lVal);
     }
   }
 }
-
-// Helper: build cell with value + unit count inline
-function _vc(val,cnt,color,prefix){
-  prefix=prefix||'';
-  return '<span style="color:'+color+';font-weight:600">'+prefix+fmtCur(val)+'</span><span class="unit-cnt">'+fmt(cnt)+'</span>';
-}
-function _vcPct(val,cls){
-  return '<span class="'+cls+'" style="font-weight:600">'+fmtPct(val)+'</span>';
-}
-function _vcProfit(val){
-  var cls=val>=0?'profit':'loss';
-  var sign=val>=0?'+':'';
-  return '<span class="'+cls+'" style="font-weight:700">'+sign+fmtCur(val)+'</span>';
+function _monthToNum(m) {
+  var months = {'january':'01','february':'02','march':'03','april':'04','may':'05','june':'06','july':'07','august':'08','september':'09','october':'10','november':'11','december':'12',
+    'jan':'01','feb':'02','mar':'03','apr':'04','jun':'06','jul':'07','aug':'08','sep':'09','oct':'10','nov':'11','dec':'12'};
+  var s = String(m).toLowerCase().trim();
+  if (months[s]) return months[s];
+  // If numeric
+  var n = parseInt(s, 10);
+  if (n >= 1 && n <= 12) return String(n).length === 1 ? '0' + n : String(n);
+  return '01';
 }
 
-// ===== FULL OVERVIEW (Company/Platform) =====
-function _renderFullOverview(data,label,tableId){
-  var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
-  if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
-  var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
-  var cols=['ORDERS','COP','RETURNS','ADVT','TRANSFERRED','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
-  h+='<th style="text-align:left;min-width:120px" onclick="_sortTable(\''+tableId+'\',0,false)">'+label+' <span class="arrow"></span></th>';
-  for(var ci=0;ci<cols.length;ci++){
-    var isN=true;
-    h+='<th onclick="_sortTable(\''+tableId+'\','+(ci+1)+','+isN+')">'+cols[ci]+' <span class="arrow"></span></th>';
-  }
-  h+='</tr></thead><tbody>';
-  h+='<tr class="flt-row"><td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';
-  for(var ci=0;ci<cols.length;ci++){
-    h+='<td><div style="display:flex;gap:2px"><select style="width:55px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option><option value="h2l">High&rarr;Low</option><option value="l2h">Low&rarr;High</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';
-  }
-  h+='</tr>';
-  var totR=0,totC=0,totRet=0,totAd=0,totTr=0,totP=0,tRevC=0,tRetC=0;
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=data[k];
-    var netUnits=(d.revCount||0)-(d.retCount||0);
-    var revPct=d.revenue>0?((d.profit/d.revenue)*100):0;
-    var copPct=d.cop>0?((d.profit/d.cop)*100):0;
-    var unitProfit=netUnits>0?(d.profit/netUnits):0;
-    var color=PL_COLORS[i%PL_COLORS.length];
-    totR+=d.revenue;totC+=d.cop;totRet+=d.returns;totAd+=d.ad;totTr+=d.transfer;totP+=d.profit;tRevC+=(d.revCount||0);tRetC+=(d.retCount||0);
-    h+='<tr>';
-    h+='<td data-v="'+k+'" style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+k+'</td>';
-    h+='<td data-v="'+d.revenue+'">'+_vc(d.revenue,d.revCount||0,'#39ff14')+'</td>';
-    h+='<td data-v="'+d.cop+'">'+_vc(d.cop,d.revCount||0,'#ff6e00','-')+'</td>';
-    h+='<td data-v="'+d.returns+'">'+_vc(d.returns,d.retCount||0,'#ff003c','-')+'</td>';
-    h+='<td data-v="'+d.ad+'">'+_vc(d.ad,d.adCount||0,'#bf00ff','-')+'</td>';
-    h+='<td data-v="'+d.transfer+'">'+_vc(d.transfer,d.trCount||0,'#4fc3f7')+'</td>';
-    h+='<td data-v="'+d.profit+'">'+_vcProfit(d.profit)+'</td>';
-    h+='<td data-v="'+revPct+'">'+_vcPct(revPct,revPct>=0?'profit':'loss')+'</td>';
-    h+='<td data-v="'+copPct+'">'+_vcPct(copPct,copPct>=0?'profit':'loss')+'</td>';
-    var upCls=unitProfit>=0?'profit':'loss';
-    h+='<td data-v="'+unitProfit+'" class="'+upCls+'" style="font-weight:600">'+fmtCur(unitProfit)+'</td>';
-    h+='<td data-v="'+netUnits+'" style="color:#4fc3f7;font-weight:700">'+fmt(netUnits)+'</td>';
-    h+='</tr>';
-  }
-  var totNet=tRevC-tRetC;
-  var totRevPct=totR>0?((totP/totR)*100):0;
-  var totCopPct=totC>0?((totP/totC)*100):0;
-  var totUP=totNet>0?(totP/totNet):0;
-  var tpCls=totP>=0?'profit':'loss';
-  h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
-  h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700">TOTAL</td>';
-  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
-  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
-  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">'+fmt(tRetC)+'</span></td>';
-  h+='<td data-v="'+totAd+'"><span style="color:#bf00ff;font-weight:700">-'+fmtCur(totAd)+'</span></td>';
-  h+='<td data-v="'+totTr+'"><span style="color:#4fc3f7;font-weight:700">'+fmtCur(totTr)+'</span></td>';
-  h+='<td data-v="'+totP+'">'+_vcProfit(totP)+'</td>';
-  h+='<td data-v="'+totRevPct+'" class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
-  h+='<td data-v="'+totCopPct+'" class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
-  h+='<td data-v="'+totUP+'" class="'+tpCls+'" style="font-weight:700">'+fmtCur(totUP)+'</td>';
-  h+='<td data-v="'+totNet+'" style="color:#4fc3f7;font-weight:700">'+fmt(totNet)+'</td>';
-  h+='</tr></tbody></table></div></div>';
-  return h;
-}
+// ===================== TEST =====================
 
-// ===== LIMITED OVERVIEW (Category/SubCategory/Product) =====
-function _renderLimitedOverview(data,label,tableId,showCount){
-  var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
-  if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
-  var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
-  var cols=['ORDERS','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
-  h+='<th style="text-align:left;min-width:140px" onclick="_sortTable(\''+tableId+'\',0,false)">'+label+' <span class="arrow"></span></th>';
-  for(var ci=0;ci<cols.length;ci++){
-    h+='<th onclick="_sortTable(\''+tableId+'\','+(ci+1)+',true)">'+cols[ci]+' <span class="arrow"></span></th>';
-  }
-  h+='</tr></thead><tbody>';
-  // Filter row
-  h+='<tr class="flt-row"><td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';
-  for(var ci=0;ci<cols.length;ci++){
-    h+='<td><div style="display:flex;gap:2px"><select style="width:55px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option><option value="h2l">High&rarr;Low</option><option value="l2h">Low&rarr;High</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';
-  }
-  h+='</tr>';
-  var totR=0,totC=0,totRet=0,totP=0,tRevC=0,tRetC=0;
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=data[k];
-    var rev=d.revenue||0;var cop=Math.abs(d.cop||0);var ret=Math.abs(d.returns||0);
-    var profit=rev-cop-ret;
-    var revCount=d.revCount||0;var retCount=d.retCount||0;
-    var netUnits=revCount-retCount;
-    var revPct=rev>0?((profit/rev)*100):0;
-    var copPct=cop>0?((profit/cop)*100):0;
-    var unitProfit=netUnits>0?(profit/netUnits):0;
-    var color=PL_COLORS[i%PL_COLORS.length];
-    totR+=rev;totC+=cop;totRet+=ret;totP+=profit;tRevC+=revCount;tRetC+=retCount;
-    h+='<tr>';
-    h+='<td data-v="'+k+'" style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+k+'</td>';
-    h+='<td data-v="'+rev+'">'+_vc(rev,revCount,'#39ff14')+'</td>';
-    h+='<td data-v="'+cop+'">'+_vc(cop,revCount,'#ff6e00','-')+'</td>';
-    h+='<td data-v="'+ret+'">'+_vc(ret,retCount,'#ff003c','-')+'</td>';
-    h+='<td data-v="'+profit+'">'+_vcProfit(profit,netUnits)+'</td>';
-    h+='<td data-v="'+revPct+'">'+_vcPct(revPct,revPct>=0?'profit':'loss')+'</td>';
-    h+='<td data-v="'+copPct+'">'+_vcPct(copPct,copPct>=0?'profit':'loss')+'</td>';
-    var upCls=unitProfit>=0?'profit':'loss';
-    h+='<td data-v="'+unitProfit+'" class="'+upCls+'" style="font-weight:600">'+fmtCur(unitProfit)+'</td>';
-    h+='<td data-v="'+netUnits+'" style="color:#4fc3f7;font-weight:700">'+fmt(netUnits)+'</td>';
-    h+='</tr>';
-  }
-  var totNet=tRevC-tRetC;
-  var totRevPct=totR>0?((totP/totR)*100):0;
-  var totCopPct=totC>0?((totP/totC)*100):0;
-  var totUP=totNet>0?(totP/totNet):0;
-  var tpCls=totP>=0?'profit':'loss';
-  h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
-  h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40">TOTAL</td>';
-  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
-  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
-  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">'+fmt(tRetC)+'</span></td>';
-  h+='<td data-v="'+totP+'">'+_vcProfit(totP,totNet)+'</td>';
-  h+='<td data-v="'+totRevPct+'" class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
-  h+='<td data-v="'+totCopPct+'" class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
-  h+='<td data-v="'+totUP+'" class="'+tpCls+'" style="font-weight:700">'+fmtCur(totUP)+'</td>';
-  h+='<td data-v="'+totNet+'" style="color:#4fc3f7;font-weight:700">'+fmt(totNet)+'</td>';
-  h+='</tr></tbody></table></div></div>';
-  return h;
+function testPLApi() {
+  var result = doGet({parameter:{}});
+  var json = JSON.parse(result.getContent());
+  Logger.log('Total Entries: ' + json.summary.totalEntries);
+  Logger.log('Total Amount: ' + json.summary.totalAmount);
+  Logger.log('P&L Revenue: ' + json.plBreakdown.revenue);
+  Logger.log('P&L Costs: ' + json.plBreakdown.costs);
+  Logger.log('Net P&L: ' + json.plBreakdown.netPL);
+  Logger.log('Platforms: ' + (json.platforms || []).join(', '));
+  Logger.log('Types: ' + (json.types || []).join(', '));
+  SpreadsheetApp.getActiveSpreadsheet().toast('Entries: ' + json.summary.totalEntries + ' | Amount: ' + json.summary.totalAmount + ' | Net P/L: ' + json.plBreakdown.netPL, 'API Test OK', 10);
 }
-
-// ===== SKU OVERVIEW (with Platform, Company, Category, Product columns) =====
-function _renderSKUOverview(data,tableId){
-  var searchQ=(document.getElementById('skuSearch')?document.getElementById('skuSearch').value:'').trim().toLowerCase();
-  var filterPlat=(document.getElementById('skuFilterPlat')?document.getElementById('skuFilterPlat').value:'');
-  var filterComp=(document.getElementById('skuFilterComp')?document.getElementById('skuFilterComp').value:'');
-  var filterCat=(document.getElementById('skuFilterCat')?document.getElementById('skuFilterCat').value:'');
-  var filterProd=(document.getElementById('skuFilterProd')?document.getElementById('skuFilterProd').value:'');
-  var filterSKU=(document.getElementById('skuFilterSKU')?document.getElementById('skuFilterSKU').value:'');
-  var allKeys=Object.keys(data);
-  // Populate dropdown options
-  var platSet={},compSet={},catSet={},prodSet={},skuSet={};
-  for(var j=0;j<allKeys.length;j++){var dd=data[allKeys[j]];if(dd.platform)platSet[dd.platform]=1;if(dd.company)compSet[dd.company]=1;if(dd.category)catSet[dd.category]=1;if(dd.product)prodSet[dd.product]=1;if(dd.sku)skuSet[dd.sku]=1;}
-  var platEl=document.getElementById('skuFilterPlat');
-  var compEl=document.getElementById('skuFilterComp');
-  var catEl=document.getElementById('skuFilterCat');
-  var prodEl=document.getElementById('skuFilterProd');
-  var skuEl=document.getElementById('skuFilterSKU');
-  if(platEl&&platEl.options.length<=1){var pls=Object.keys(platSet).sort();for(var pli=0;pli<pls.length;pli++){var o=document.createElement('option');o.value=pls[pli];o.textContent=pls[pli];platEl.appendChild(o);}}
-  if(compEl&&compEl.options.length<=1){var cos=Object.keys(compSet).sort();for(var coi=0;coi<cos.length;coi++){var o=document.createElement('option');o.value=cos[coi];o.textContent=cos[coi];compEl.appendChild(o);}}
-  if(catEl&&catEl.options.length<=1){var cs=Object.keys(catSet).sort();for(var ci2=0;ci2<cs.length;ci2++){var o=document.createElement('option');o.value=cs[ci2];o.textContent=cs[ci2];catEl.appendChild(o);}}
-  if(prodEl&&prodEl.options.length<=1){var ps=Object.keys(prodSet).sort();for(var pi2=0;pi2<ps.length;pi2++){var o=document.createElement('option');o.value=ps[pi2];o.textContent=ps[pi2];prodEl.appendChild(o);}}
-  if(skuEl&&skuEl.options.length<=1){var ss=Object.keys(skuSet).sort();for(var si2=0;si2<ss.length;si2++){var o=document.createElement('option');o.value=ss[si2];o.textContent=ss[si2];skuEl.appendChild(o);}}
-  var keys=[];
-  for(var i=0;i<allKeys.length;i++){
-    var d=data[allKeys[i]];
-    if(filterPlat&&(d.platform||'')!==filterPlat)continue;
-    if(filterComp&&(d.company||'')!==filterComp)continue;
-    if(filterCat&&(d.category||'')!==filterCat)continue;
-    if(filterProd&&(d.product||'')!==filterProd)continue;
-    if(filterSKU&&(d.sku||'')!==filterSKU)continue;
-    var txt=((d.platform||'')+' '+(d.company||'')+' '+(d.category||'')+' '+(d.product||'')+' '+(d.sku||'')+' '+allKeys[i]).toLowerCase();
-    if(!searchQ||txt.indexOf(searchQ)>-1)keys.push(allKeys[i]);
-  }
-  keys.sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
-  if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
-  var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
-  var cols=['PLATFORM','COMPANY','CATEGORY','PRODUCT','SKU','ORDERS','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
-  for(var ci=0;ci<cols.length;ci++){
-    var isN=ci>=5;
-    var align=ci<5?'text-align:left;':'';
-    var minW=ci===4?'min-width:160px;':ci<4?'min-width:90px;':'';
-    h+='<th style="'+align+minW+'" onclick="_sortTable(\''+tableId+'\','+ci+','+isN+')">'+cols[ci]+' <span class="arrow"></span></th>';
-  }
-  h+='</tr></thead><tbody>';
-  h+='<tr class="flt-row">';
-  for(var ci=0;ci<cols.length;ci++){
-    if(ci<5){h+='<td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';}
-    else{h+='<td><div style="display:flex;gap:2px"><select style="width:55px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option><option value="h2l">High&rarr;Low</option><option value="l2h">Low&rarr;High</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';}
-  }
-  h+='</tr>';
-  var totR=0,totC=0,totRet=0,totP=0,tRevC=0,tRetC=0;
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];var d=data[k];
-    var rev=d.revenue||0;var cop=Math.abs(d.cop||0);var ret=Math.abs(d.returns||0);
-    var profit=rev-cop-ret;
-    var revCount=d.revCount||0;var retCount=d.retCount||0;
-    var netUnits=revCount-retCount;
-    var revPct=rev>0?((profit/rev)*100):0;
-    var copPct=cop>0?((profit/cop)*100):0;
-    var unitProfit=netUnits>0?(profit/netUnits):0;
-    var color=PL_COLORS[i%PL_COLORS.length];
-    totR+=rev;totC+=cop;totRet+=ret;totP+=profit;tRevC+=revCount;tRetC+=retCount;
-    h+='<tr>';
-    h+='<td data-v="'+(d.platform||'')+'" style="text-align:left;border-left:4px solid '+color+';font-weight:600;color:#4fc3f7">'+(d.platform||'-')+'</td>';
-    h+='<td data-v="'+(d.company||'')+'" style="text-align:left;font-weight:600;color:#fff">'+(d.company||'-')+'</td>';
-    h+='<td data-v="'+(d.category||'')+'" style="text-align:left;font-weight:600;color:#fff">'+(d.category||'-')+'</td>';
-    h+='<td data-v="'+(d.product||'')+'" style="text-align:left;font-weight:600;color:#fff">'+(d.product||'-')+'</td>';
-    h+='<td data-v="'+(d.sku||'')+'" style="text-align:left;font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+(d.sku||k)+'</td>';
-    h+='<td data-v="'+rev+'">'+_vc(rev,revCount,'#39ff14')+'</td>';
-    h+='<td data-v="'+cop+'">'+_vc(cop,revCount,'#ff6e00','-')+'</td>';
-    h+='<td data-v="'+ret+'">'+_vc(ret,retCount,'#ff003c','-')+'</td>';
-    h+='<td data-v="'+profit+'">'+_vcProfit(profit,netUnits)+'</td>';
-    h+='<td data-v="'+revPct+'">'+_vcPct(revPct,revPct>=0?'profit':'loss')+'</td>';
-    h+='<td data-v="'+copPct+'">'+_vcPct(copPct,copPct>=0?'profit':'loss')+'</td>';
-    var upCls=unitProfit>=0?'profit':'loss';
-    h+='<td data-v="'+unitProfit+'" class="'+upCls+'" style="font-weight:600">'+fmtCur(unitProfit)+'</td>';
-    h+='<td data-v="'+netUnits+'" style="color:#4fc3f7;font-weight:700">'+fmt(netUnits)+'</td>';
-    h+='</tr>';
-  }
-  var totNet=tRevC-tRetC;
-  var totRevPct=totR>0?((totP/totR)*100):0;
-  var totCopPct=totC>0?((totP/totC)*100):0;
-  var totUP=totNet>0?(totP/totNet):0;
-  var tpCls=totP>=0?'profit':'loss';
-  h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
-  h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40" colspan="5">TOTAL ('+keys.length+' SKUs)</td>';
-  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
-  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
-  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">'+fmt(tRetC)+'</span></td>';
-  h+='<td data-v="'+totP+'">'+_vcProfit(totP,totNet)+'</td>';
-  h+='<td data-v="'+totRevPct+'" class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
-  h+='<td data-v="'+totCopPct+'" class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
-  h+='<td data-v="'+totUP+'" class="'+tpCls+'" style="font-weight:700">'+fmtCur(totUP)+'</td>';
-  h+='<td data-v="'+totNet+'" style="color:#4fc3f7;font-weight:700">'+fmt(totNet)+'</td>';
-  h+='</tr></tbody></table></div></div>';
-  return h;
-}
-
-function renderCompanyOverview(){
-  var data=_buildOverview('company');
-  document.getElementById('ovCompanyContent').innerHTML=_renderFullOverview(data,'COMPANY','tblCompany');
-}
-function renderPlatformOverview(){
-  var data=_buildOverview('platform');
-  document.getElementById('ovPlatformContent').innerHTML=_renderFullOverview(data,'PLATFORM','tblPlatform');
-}
-function renderCategoryOverview(){
-  var catData=DATA.byCategory||{};
-  document.getElementById('ovCategoryContent').innerHTML=_renderLimitedOverview(catData,'CATEGORY','tblCategory');
-}
-function renderSubCategoryOverview(){
-  var subCatData=DATA.bySubCategory||{};
-  document.getElementById('ovSubCategoryContent').innerHTML=_renderLimitedOverview(subCatData,'SUB CATEGORY','tblSubCat');
-}
-function renderProductOverview(){
-  var prodData=DATA.byProduct||{};
-  document.getElementById('ovProductContent').innerHTML=_renderLimitedOverview(prodData,'PRODUCT','tblProduct','Product');
-}
-function renderSKUOverview(){
-  var skuData=DATA.bySKU||{};
-  document.getElementById('ovSKUContent').innerHTML=_renderSKUOverview(skuData,'tblSKU');
-}
-
-// ===== MODAL FUNCTIONS =====
-function openModal(title,html){
-  document.getElementById('modalTitle').textContent=title;
-  document.getElementById('modalBody').innerHTML=html;
-  document.getElementById('modalNav').style.display=modalStack.length>0?'flex':'none';
-  document.getElementById('modal').classList.add('show');
-  document.body.style.overflow='hidden';
-}
-
-function closeModal(){
-  document.getElementById('modal').classList.remove('show');
-  document.body.style.overflow='';
-  modalStack=[];
-}
-
-function modalBack(){
-  if(PL_DM.type==='typeCard'&&PL_DM.level===2){
-    PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
-    document.getElementById('modalTitle').textContent=PL_DM.typeName+' - Platform Breakdown';
-    document.getElementById('modalNav').style.display='none';
-    renderTypeDrillPlatforms();
-    return;
-  }
-  if(PL_DM.level===2){
-    PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
-    var label=plDrillLabel(PL_DM.type);
-    document.getElementById('modalTitle').textContent=label+' - Platform Breakdown';
-    document.getElementById('modalNav').style.display='none';
-    renderPLDrillPlatforms();
-    return;
-  }
-  if(PL_DM.level===1){closeModal();return;}
-  if(modalStack.length>0){
-    var prev=modalStack.pop();
-    openModal(prev.title,prev.html);
-  }
-}
-
-// ===== ACCORDION =====
-function toggleAcc(section){
-  var btn=document.getElementById('btn-'+section);
-  var content=document.getElementById('acc-'+section);
-  var arr=document.getElementById('arr-'+section);
-  if(content.classList.contains('show')){
-    content.classList.remove('show');
-    btn.classList.remove('active');
-    arr.innerHTML='&#9660;';
-  }else{
-    content.classList.add('show');
-    btn.classList.add('active');
-    arr.innerHTML='&#9650;';
-  }
-}
-
-// ===== DOWNLOAD CSV =====
-function downloadCSV(){
-  var bt=DATA.byType||{};
-  var csv='Type,Category,Entries,QTY,Amount\n';
-  var keys=Object.keys(bt).sort(function(a,b){return bt[b].amount-bt[a].amount;});
-  keys.forEach(function(k){
-    var cat=REVENUE_TYPES[k]?'Revenue':'Cost';
-    csv+='"'+k+'",'+cat+','+bt[k].entries+','+bt[k].qty+','+bt[k].amount+'\n';
-  });
-  csv+='\nPlatform,Entries,QTY,Amount\n';
-  var bp=DATA.byPlatform||{};
-  var pKeys=Object.keys(bp).sort(function(a,b){return bp[b].amount-bp[a].amount;});
-  pKeys.forEach(function(k){csv+='"'+k+'",'+bp[k].entries+','+bp[k].qty+','+bp[k].amount+'\n';});
-  csv+='\nCompany,Entries,QTY,Amount\n';
-  var bc=DATA.byCompany||{};
-  var cKeys=Object.keys(bc).sort(function(a,b){return bc[b].amount-bc[a].amount;});
-  cKeys.forEach(function(k){csv+='"'+k+'",'+bc[k].entries+','+bc[k].qty+','+bc[k].amount+'\n';});
-  csv+='\nMonth,Entries,QTY,Orders,Costs,Net PL,Margin%\n';
-  var bm=DATA.byMonth||[];
-  bm.forEach(function(m){
-    var net=(m.revenue||0)+(m.costs||0);
-    var margin=(m.revenue||0)>0?((net/(m.revenue||1))*100):0;
-    csv+=m.month+','+m.entries+','+m.qty+','+(m.revenue||0)+','+(m.costs||0)+','+net+','+margin.toFixed(1)+'\n';
-  });
-  var blob=new Blob([csv],{type:'text/csv'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='pl_data_'+new Date().toISOString().split('T')[0]+'.csv';
-  a.click();
-}
-
-// ===== INIT =====
-loadData();
-</script>
-</body>
-</html>
