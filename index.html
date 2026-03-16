@@ -337,7 +337,7 @@ var PL_COLORS=['#39ff14','#4fc3f7','#ff6e00','#bf00ff','#f72585','#00bcd4','#ff6
 
 var TYPE_CARD_ORDER=['Advertisement','Warehouse Charges','Value Added Services','Affiliate Fee','Charges','Adjustment','Reimbursements'];
 var TYPE_CARD_EXCLUDE={'Order':1,'Return':1,'Shipping Service':1,'Fee Refund':1,'MP Fee Rebate':1};
-var TYPE_CARD_COLORS={'Advertisement':'#bf00ff','Warehouse Charges':'#f72585','Value Added Services':'#00bcd4','Affiliate Fee':'#ff6b35','Charges':'#7b68ee','Adjustment':'#ff9800','Reimbursements':'#8bc34a'};
+var TYPE_CARD_COLORS={'Advertisement':'#bf00ff','Warehouse Charges':'#f72585','Value Added Services':'#00bcd4','Affiliate Fee':'#ff6b35','Charges':'#7b68ee','Adjustment':'#ff9800','Reimbursements':'#8bc34a','Unknown':'#ffd700'};
 
 function renderPLCards(){
   var pc=DATA.plCards||{};
@@ -408,7 +408,7 @@ function renderPLCards(){
   h+='</div>';
 
   // 4. ORDERS
-  h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">ORDERS</div><div class="vl" style="color:#00e5ff">'+fmtCur(revenue)+'</div></div>';
+  h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">ORDERS</div><div class="vl" style="color:#f72585">'+fmtCur(revenue)+'</div></div>';
   h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#ff6e00">-'+fmtCur(Math.abs(cop))+'</div></div>';
   h+='<div class="cd r" style="cursor:pointer" onclick="openPLDrill(\'returns\')"><div class="lb">RETURNS</div><div class="vl" style="color:#ff003c">'+fmtCur(returns)+'</div></div>';
 
@@ -431,9 +431,10 @@ function renderPLCards(){
     if(aName.toUpperCase()==='TRANSFER')continue;
     var aData=td[aName];
     var aTotal=aData?aData.total:0;
-    h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\''+aName.replace(/'/g,"\\'")+'\')">';
+    var aColor=TYPE_CARD_COLORS[aName]||'#4fc3f7';
+    h+='<div class="cd" style="cursor:pointer;border-left-color:'+aColor+'" onclick="openTypeDrill(\''+aName.replace(/'/g,"\\'")+'\')">';
     h+='<div class="lb">'+aName.toUpperCase()+'</div>';
-    h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(aTotal)+'</div>';
+    h+='<div class="vl" style="color:'+aColor+'">'+fmtCur(aTotal)+'</div>';
     h+='</div>';
   }
 
