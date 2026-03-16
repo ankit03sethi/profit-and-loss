@@ -18,45 +18,54 @@ h1{text-align:center;color:#39ff14;font-size:20px;letter-spacing:1px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
 .cd{background:#0d1a30;border-radius:10px;padding:12px;text-align:center;border-left:4px solid #4fc3f7;transition:.2s;cursor:pointer}
 .cd:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(79,195,247,.3);border-left-color:#fff}
-.cd.g{border-left-color:#39ff14}.cd.o{border-left-color:#e09f3e}.cd.r{border-left-color:#dc2f02}.cd.p{border-left-color:#a855f7}.cd.b{border-left-color:#4fc3f7}.cd.pk{border-left-color:#f72585}.cd.teal{border-left-color:#00bcd4}
+.cd.g{border-left-color:#39ff14}.cd.o{border-left-color:#ff6e00}.cd.r{border-left-color:#ff003c}.cd.p{border-left-color:#bf00ff}.cd.b{border-left-color:#4fc3f7}.cd.pk{border-left-color:#f72585}.cd.teal{border-left-color:#00bcd4}
 .cd .lb{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.5px}
 .cd .vl{font-size:22px;font-weight:700;color:#fff}
 .cd .sub-val{font-size:28px;color:#888;margin-top:4px;font-weight:800}
 .cd .change{font-size:11px;margin-top:2px}
-.cd .change.up{color:#39ff14}.cd .change.down{color:#dc2f02}
-.profit{color:#39ff14;font-weight:700}.loss{color:#dc2f02;font-weight:700}
+.cd .change.up{color:#39ff14}.cd .change.down{color:#ff003c}
+.profit{color:#39ff14;font-weight:700}.loss{color:#ff003c;font-weight:700}
 .fbox{background:#0d1a30;border-radius:10px;padding:12px;margin-bottom:12px}
 .frow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .frow select{background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:110px}
 .frow select:focus{border-color:#4fc3f7;outline:none}
 .fbtn{background:#39ff14;color:#1a1a2e;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
 .fbtn:hover{background:#2ed810}
-.fbtn.ref{background:#e09f3e}.fbtn.ref:hover{background:#c88a2e}
+.fbtn.ref{background:#ff6e00}.fbtn.ref:hover{background:#e06000}
 .fbtn.dl{background:#4fc3f7;color:#1a1a2e}.fbtn.dl:hover{background:#3ab0e0}
 .tbox{background:#0d1a30;border-radius:10px;padding:12px;margin-bottom:12px}
 .tbox h3{color:#4fc3f7;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
 .tbox h3 span{color:#888;font-size:11px;font-weight:400}
-.twrap{overflow-x:auto;overflow-y:auto;max-height:500px;width:100%}
+.twrap{overflow-x:auto;overflow-y:auto;max-height:600px;width:100%;position:relative}
 table{border-collapse:collapse;font-size:11px;white-space:nowrap;min-width:100%}
-th{background:#0a1e40;color:#4fc3f7;padding:6px 8px;text-align:center;position:sticky;top:0;z-index:2;cursor:pointer;user-select:none}
+th{background:#0a1e40;color:#4fc3f7;padding:6px 8px;text-align:center;position:sticky;top:0;z-index:3;cursor:pointer;user-select:none}
 th:hover{background:#1a4a80;color:#39ff14}
 th .arrow{margin-left:4px;font-size:10px;color:#39ff14}
 td{padding:5px 8px;border-bottom:1px solid #1a1a2e;color:#ddd;text-align:center}
 tr:nth-child(even) td{background:#0a0f1e}
 tr:hover td{background:#1f2b47}
+/* Sticky first column */
+.twrap table th:first-child,.twrap table td:first-child{position:sticky;left:0;z-index:2;background:#0d1a30}
+.twrap table th:first-child{z-index:4;background:#0a1e40}
+tr:nth-child(even) td:first-child{background:#0a0f1e}
+tr:hover td:first-child{background:#1f2b47}
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
 .bg{background:#143d14;color:#39ff14;border:1px solid #2a6b2a}
 .br{background:#3d1414;color:#ff4444;border:1px solid #6b2a2a}
 .ft{text-align:center;color:#555;font-size:10px;margin-top:8px}
 .home-btn{background:none;border:none;cursor:pointer;padding:4px;position:absolute;left:0;top:50%;transform:translateY(-50%);display:flex;align-items:center}
 .home-btn svg{width:28px;height:28px;fill:none;stroke:#39ff14}
+/* Global search */
+.global-search{position:absolute;right:0;top:50%;transform:translateY(-50%)}
+.global-search input{background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 10px;font-size:12px;width:180px}
+.global-search input:focus{border-color:#4fc3f7;outline:none}
 /* Modal */
 .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);z-index:100;overflow-y:auto;padding:20px}
 .modal-overlay.show{display:block}
 .modal-box{background:#111827;border:1px solid #444;border-radius:12px;max-width:1200px;margin:0 auto;padding:20px;position:relative;min-height:300px;overflow-x:auto}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #444}
 .modal-title{color:#39ff14;font-size:16px;font-weight:700}
-.modal-close{background:#dc2f02;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer}
+.modal-close{background:#ff003c;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer}
 .modal-close:hover{background:#ff4444}
 .modal-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .modal-back{background:#4fc3f7;color:#1a1a2e;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
@@ -69,15 +78,8 @@ tr:hover td{background:#1f2b47}
 .drill-item .di-name{font-size:12px;color:#eee;font-weight:600;margin-bottom:4px}
 .drill-item .di-count{font-size:14px;font-weight:600;color:#39ff14}
 .drill-item .di-amt{font-size:18px;font-weight:700;margin-top:4px}
-/* Overview cards */
-.ov-heading{color:#e09f3e;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px 4px}
-.ov-card{background:#0d1a30;border-radius:10px;padding:10px 12px;border-left:4px solid #4fc3f7;transition:.2s;cursor:pointer}
-.ov-card:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(79,195,247,.3);border-left-color:#39ff14}
-.ov-card .ov-name{font-size:12px;font-weight:700;color:#fff;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ov-card .ov-row{display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin-top:2px}
-.ov-card .ov-row .ov-val{font-weight:600;color:#fff}
 /* Accordion */
-.acc-btn{background:#0d1a30;color:#e09f3e;border:1px solid #444;padding:12px 15px;width:100%;text-align:left;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;margin-top:10px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;transition:.2s;text-transform:uppercase}
+.acc-btn{background:#0d1a30;color:#ff6e00;border:1px solid #444;padding:12px 15px;width:100%;text-align:left;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;margin-top:10px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;transition:.2s;text-transform:uppercase}
 .acc-btn:hover{background:#1a3055;border-color:#4fc3f7}
 .acc-btn.active{border-color:#4fc3f7;color:#4fc3f7;border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0;background:#1a3055}
 .acc-btn span{font-size:10px;color:#888;transition:.2s}
@@ -88,15 +90,26 @@ tr:hover td{background:#1f2b47}
 .chart-sm{height:220px}
 .pl-bar{height:28px;border-radius:4px;margin:4px 0;display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:600;min-width:60px;transition:.3s}
 .pl-label{display:flex;justify-content:space-between;align-items:center;margin:4px 0;font-size:12px}
-/* Two-col layout for charts */
 .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-@media(max-width:768px){.cards{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.chart-row{grid-template-columns:1fr}}
+/* Filter row */
+.flt-row td{padding:3px 4px;background:#0a1628!important}
+.flt-row input,.flt-row select{background:#0a0f1e;color:#eee;border:1px solid #333;border-radius:4px;padding:2px 4px;font-size:10px;width:100%}
+.flt-row input:focus,.flt-row select:focus{border-color:#4fc3f7;outline:none}
+/* Unit count inline */
+.unit-cnt{display:block;font-size:10px;color:#666;margin-top:1px;font-weight:400}
+/* SKU search */
+.sku-search{background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 10px;font-size:12px;width:100%;margin-bottom:8px}
+.sku-search:focus{border-color:#4fc3f7;outline:none}
+/* Total count badge */
+.cnt-badge{font-size:10px;color:#888;font-weight:400;margin-left:8px}
+@media(max-width:768px){.cards{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.chart-row{grid-template-columns:1fr}.global-search input{width:120px}}
 </style>
 </head>
 <body>
 <div class="header-row">
   <button class="home-btn" onclick="location.reload()" title="Refresh"><svg viewBox="0 0 24 24"><path d="M4 12L12 4l8 8" stroke="#39ff14" stroke-width="1.5"/><path d="M6 10.5V19.5a.5.5 0 00.5.5H10v-5h4v5h3.5a.5.5 0 00.5-.5V10.5" stroke="#39ff14" stroke-width="1.5"/></svg></button>
   <div class="sub">PROFIT & LOSS</div>
+  <div class="global-search"><input type="text" id="globalSearch" placeholder="Search all..." oninput="globalSearchFilter()"></div>
 </div>
 
 <div id="loader" class="loading"><div class="spin"></div><br>Loading payment data...<br><span style="font-size:13px;color:#888">This may take a few seconds</span></div>
@@ -112,7 +125,7 @@ tr:hover td{background:#1f2b47}
   <select id="fMonth" onchange="applyFilter()" style="background:#0a1628;color:#39ff14;border:1px solid #39ff14;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
     <option value="">All Months</option>
   </select>
-  <select id="fYear" onchange="applyFilter()" style="background:#0a1628;color:#e09f3e;border:1px solid #e09f3e;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
+  <select id="fYear" onchange="applyFilter()" style="background:#0a1628;color:#ff6e00;border:1px solid #ff6e00;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
     <option value="">All Years</option>
   </select>
   <button class="fbtn ref" onclick="DATA_CACHE={};loadData()">Refresh</button>
@@ -145,14 +158,15 @@ tr:hover td{background:#1f2b47}
 </div>
 
 <!-- PRODUCT OVERVIEW -->
-<button class="acc-btn" id="btn-ovProduct" onclick="toggleAcc('ovProduct')">PRODUCT OVERVIEW <span id="arr-ovProduct">&#9660;</span></button>
+<button class="acc-btn" id="btn-ovProduct" onclick="toggleAcc('ovProduct')">PRODUCT OVERVIEW<span class="cnt-badge" id="cntProduct"></span> <span id="arr-ovProduct">&#9660;</span></button>
 <div class="acc-content" id="acc-ovProduct">
   <div id="ovProductContent"></div>
 </div>
 
 <!-- SKU OVERVIEW -->
-<button class="acc-btn" id="btn-ovSKU" onclick="toggleAcc('ovSKU')">SKU OVERVIEW <span id="arr-ovSKU">&#9660;</span></button>
+<button class="acc-btn" id="btn-ovSKU" onclick="toggleAcc('ovSKU')">SKU OVERVIEW<span class="cnt-badge" id="cntSKU"></span> <span id="arr-ovSKU">&#9660;</span></button>
 <div class="acc-content" id="acc-ovSKU">
+  <input type="text" class="sku-search" id="skuSearch" placeholder="Search SKU, Platform, Company..." oninput="renderSKUOverview()">
   <div id="ovSKUContent"></div>
 </div>
 
@@ -181,12 +195,13 @@ var DATA={};
 var DATA_CACHE={};
 var _charts={};
 var REVENUE_TYPES={'Order':1,'Transfer':1,'Reimbursements':1,'MP Fee Rebate':1,'Referral Payment':1,'Fee Refund':1};
-var COLORS=['#4fc3f7','#39ff14','#e09f3e','#a855f7','#f72585','#00bcd4','#ff6b35','#7b68ee','#ff9800','#8bc34a','#ef5350','#26a69a','#ab47bc','#ffa726'];
+var COLORS=['#4fc3f7','#39ff14','#ff6e00','#bf00ff','#f72585','#00bcd4','#ff6b35','#7b68ee','#ff9800','#8bc34a','#ef5350','#26a69a','#ab47bc','#ffa726'];
 var modalStack=[];
 
 function fmt(n){if(n==null||isNaN(n))return '0';return Number(n).toLocaleString('en-IN',{maximumFractionDigits:0});}
 function fmtCur(n){return fmt(n);}
 function fmtPct(n){return (n||0).toFixed(1)+'%';}
+function fmtDec(n){return (n||0).toFixed(2);}
 function destroyChart(id){if(_charts[id]){_charts[id].destroy();delete _charts[id];}}
 
 // ===== LOAD DATA =====
@@ -225,7 +240,7 @@ function loadData(){
     .catch(function(e){onErr('Fetch failed: '+e.message);});
 }
 
-function onErr(msg){document.getElementById('loader').innerHTML='<div style="color:#dc2f02;font-size:14px">'+msg+'</div><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Test API directly</a>';}
+function onErr(msg){document.getElementById('loader').innerHTML='<div style="color:#ff003c;font-size:14px">'+msg+'</div><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Test API directly</a>';}
 
 // ===== POPULATE MONTH/YEAR DROPDOWNS =====
 function populateFilters(d){
@@ -266,16 +281,30 @@ function renderAll(){
   renderSKUOverview();
 }
 
+// ===== GLOBAL SEARCH =====
+function globalSearchFilter(){
+  var q=(document.getElementById('globalSearch').value||'').trim().toLowerCase();
+  // Show/hide accordion sections based on match, highlight matching rows
+  var sections=['ovCompany','ovPlatform','ovCategory','ovSubCategory','ovProduct','ovSKU'];
+  for(var s=0;s<sections.length;s++){
+    var content=document.getElementById('acc-'+sections[s]);
+    var rows=content?content.querySelectorAll('table tbody tr'):[];
+    var anyMatch=false;
+    for(var r=0;r<rows.length;r++){
+      var txt=rows[r].textContent.toLowerCase();
+      if(!q||txt.indexOf(q)>-1){rows[r].style.display='';anyMatch=true;}
+      else{rows[r].style.display='none';}
+    }
+  }
+}
+
 // ===== P&L CARDS (Revenue & COP only, with drill-down) =====
 var PL_DM={type:'',level:0,platform:'',company:''};
-var PL_COLORS=['#39ff14','#4fc3f7','#e09f3e','#a855f7','#f72585','#00bcd4','#ff6b35','#7b68ee','#ff9800','#8bc34a','#ef5350','#26a69a'];
+var PL_COLORS=['#39ff14','#4fc3f7','#ff6e00','#bf00ff','#f72585','#00bcd4','#ff6b35','#7b68ee','#ff9800','#8bc34a','#ef5350','#26a69a'];
 
-// Type card sequence (after Revenue/COP/Returns) — matched from column G spellings
 var TYPE_CARD_ORDER=['Advertisement','Warehouse Charges','Value Added Services','Affiliate Fee','Charges','Adjustment','Reimbursements'];
-// Types excluded from cards (already have special cards or excluded)
 var TYPE_CARD_EXCLUDE={'Order':1,'Return':1,'Shipping Service':1,'Fee Refund':1,'MP Fee Rebate':1};
-// Colors for type cards
-var TYPE_CARD_COLORS={'Advertisement':'#a855f7','Warehouse Charges':'#f72585','Value Added Services':'#00bcd4','Affiliate Fee':'#ff6b35','Charges':'#7b68ee','Adjustment':'#ff9800','Reimbursements':'#8bc34a'};
+var TYPE_CARD_COLORS={'Advertisement':'#bf00ff','Warehouse Charges':'#f72585','Value Added Services':'#00bcd4','Affiliate Fee':'#ff6b35','Charges':'#7b68ee','Adjustment':'#ff9800','Reimbursements':'#8bc34a'};
 
 function renderPLCards(){
   var pc=DATA.plCards||{};
@@ -285,10 +314,9 @@ function renderPLCards(){
   var returns=pc.returns||0;
   var h='';
   h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">REVENUE</div><div class="vl">'+fmtCur(revenue)+'</div></div>';
-  h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#e09f3e">-'+fmtCur(Math.abs(cop))+'</div></div>';
-  h+='<div class="cd r" style="cursor:pointer" onclick="openPLDrill(\'returns\')"><div class="lb">RETURNS</div><div class="vl" style="color:#dc2f02">'+fmtCur(returns)+'</div></div>';
+  h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#ff6e00">-'+fmtCur(Math.abs(cop))+'</div></div>';
+  h+='<div class="cd r" style="cursor:pointer" onclick="openPLDrill(\'returns\')"><div class="lb">RETURNS</div><div class="vl" style="color:#ff003c">'+fmtCur(returns)+'</div></div>';
 
-  // Type cards in specified order
   for(var ti=0;ti<TYPE_CARD_ORDER.length;ti++){
     var tName=TYPE_CARD_ORDER[ti];
     var tData=td[tName];
@@ -301,12 +329,11 @@ function renderPLCards(){
     h+='</div>';
   }
 
-  // Any remaining types not in the ordered list and not excluded
   var allTypes=Object.keys(td).sort();
   for(var ai=0;ai<allTypes.length;ai++){
     var aName=allTypes[ai];
     if(TYPE_CARD_EXCLUDE[aName])continue;
-    if(TYPE_CARD_ORDER.indexOf(aName)!==-1)continue;  // already shown above
+    if(TYPE_CARD_ORDER.indexOf(aName)!==-1)continue;
     var aData=td[aName];
     var aTotal=aData?aData.total:0;
     if(aName.toUpperCase()==='TRANSFER') aTotal=Math.abs(aTotal);
@@ -378,7 +405,6 @@ function typeDrillToPlatform(plat){
 function renderTypeDrillCompanies(){
   var td=DATA.typeDetail||{};
   var tData=td[PL_DM.typeName];
-  // Use nested byCompany under selected platform (3rd step filtered by platform)
   var platData=tData&&tData.byPlatform?tData.byPlatform[PL_DM.platform]:null;
   var byComp=platData&&platData.byCompany?platData.byCompany:null;
   if(!byComp||!Object.keys(byComp).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
@@ -411,9 +437,9 @@ function renderTypeDrillCompanies(){
   document.getElementById('modalBody').innerHTML=h;
 }
 
-// ===== P&L CARD DRILL-DOWN (Platform → Company) =====
+// ===== P&L CARD DRILL-DOWN (Platform -> Company) =====
 function plDrillLabel(type){return type==='revenue'?'Revenue':type==='cop'?'COP (Cost of Product)':'Returns';}
-function plDrillColor(type){return type==='revenue'?'#39ff14':type==='cop'?'#e09f3e':'#dc2f02';}
+function plDrillColor(type){return type==='revenue'?'#39ff14':type==='cop'?'#ff6e00':'#ff003c';}
 
 function openPLDrill(type){
   PL_DM={type:type,level:1,platform:'',company:''};
@@ -448,7 +474,6 @@ function renderPLDrillPlatforms(){
     h+='</div>';
   }
   h+='</div>';
-  // Table
   h+='<div class="tbox"><h3>'+lbl+' BY PLATFORM <span>Click for company breakdown</span></h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">PLATFORM</th><th>ENTRIES</th><th>VALUE</th><th>% OF TOTAL</th></tr></thead><tbody>';
   for(var i=0;i<keys.length;i++){
     var k=keys[i];var d=byPlat[k];var pct=total!==0?((d.value/total)*100):0;var color=PL_COLORS[i%PL_COLORS.length];
@@ -503,15 +528,6 @@ function renderPLDrillCompanies(){
   document.getElementById('modalBody').innerHTML=h;
 }
 
-function plCard(label,val,cls){
-  return '<div class="cd '+cls+'"><div class="lb">'+label+'</div><div class="vl">'+fmtCur(val)+'</div></div>';
-}
-function plCardPL(label,val){
-  var cls=val>=0?'g':'r';
-  var prefix=val>=0?'+':'';
-  return '<div class="cd '+cls+'"><div class="lb">'+label+'</div><div class="vl '+(val>=0?'profit':'loss')+'">'+prefix+fmtCur(val)+'</div></div>';
-}
-
 // ===== OVERVIEW HELPER: build per-entity P&L data =====
 function _buildOverview(entityType){
   var pc=DATA.plCards||{};
@@ -548,161 +564,302 @@ function _buildOverview(entityType){
   return result;
 }
 
-// Render overview table with full columns (Company/Platform: Rev, COP, Returns, Ad, Transfer, Profit, REV PROFIT %, COP PROFIT %, /UNIT PROFIT)
-function _renderFullOverview(data,label){
+// ===== TABLE SORT & FILTER ENGINE =====
+var _sortState={};
+function _sortTable(tableId,colIdx,isNum){
+  var key=tableId+'_'+colIdx;
+  _sortState[key]=_sortState[key]==='asc'?'desc':'asc';
+  var dir=_sortState[key];
+  var table=document.getElementById(tableId);
+  if(!table)return;
+  var tbody=table.querySelector('tbody');
+  var rows=Array.prototype.slice.call(tbody.querySelectorAll('tr:not(.flt-row):not(.tot-row)'));
+  rows.sort(function(a,b){
+    var ac=a.cells[colIdx],bc=b.cells[colIdx];
+    if(!ac||!bc)return 0;
+    var av=ac.getAttribute('data-v'),bv=bc.getAttribute('data-v');
+    if(isNum){av=parseFloat(av)||0;bv=parseFloat(bv)||0;return dir==='asc'?av-bv:bv-av;}
+    av=(av||'').toLowerCase();bv=(bv||'').toLowerCase();
+    return dir==='asc'?(av>bv?1:av<bv?-1:0):(av<bv?1:av>bv?-1:0);
+  });
+  for(var i=0;i<rows.length;i++)tbody.appendChild(rows[i]);
+  // Move total row to end
+  var totRow=tbody.querySelector('.tot-row');
+  if(totRow)tbody.appendChild(totRow);
+  // Update arrow
+  var ths=table.querySelectorAll('thead th');
+  for(var t=0;t<ths.length;t++){var ar=ths[t].querySelector('.arrow');if(ar)ar.textContent='';}
+  var th=ths[colIdx];if(th){var ar=th.querySelector('.arrow');if(ar)ar.textContent=dir==='asc'?'\u25B2':'\u25BC';}
+}
+
+function _applyColFilter(tableId){
+  var table=document.getElementById(tableId);
+  if(!table)return;
+  var fltRow=table.querySelector('.flt-row');
+  if(!fltRow)return;
+  var cells=fltRow.cells;
+  var tbody=table.querySelector('tbody');
+  var rows=tbody.querySelectorAll('tr:not(.flt-row):not(.tot-row)');
+  for(var r=0;r<rows.length;r++){
+    var show=true;
+    for(var c=0;c<cells.length;c++){
+      var inp=cells[c].querySelector('input');
+      var sel=cells[c].querySelector('select');
+      if(!inp)continue;
+      var fv=inp.value.trim();
+      if(!fv)continue;
+      var dv=rows[r].cells[c]?rows[r].cells[c].getAttribute('data-v'):'';
+      if(sel){
+        var mode=sel.value;
+        var nf=parseFloat(fv),nd=parseFloat(dv)||0;
+        if(isNaN(nf))continue;
+        if(mode==='gte'&&nd<nf)show=false;
+        if(mode==='lte'&&nd>nf)show=false;
+      } else {
+        if(dv.toLowerCase().indexOf(fv.toLowerCase())<0)show=false;
+      }
+    }
+    rows[r].style.display=show?'':'none';
+  }
+}
+
+// Helper: build cell with value + unit count inline
+function _vc(val,cnt,color,prefix){
+  prefix=prefix||'';
+  return '<span style="color:'+color+';font-weight:600">'+prefix+fmtCur(val)+'</span><span class="unit-cnt">('+fmt(cnt)+')</span>';
+}
+function _vcPct(val,cls){
+  return '<span class="'+cls+'" style="font-weight:600">'+fmtPct(val)+'</span>';
+}
+function _vcProfit(val,netUnits){
+  var cls=val>=0?'profit':'loss';
+  var sign=val>=0?'+':'';
+  return '<span class="'+cls+'" style="font-weight:700">'+sign+fmtCur(val)+'</span><span class="unit-cnt">Net: '+fmt(netUnits)+'</span>';
+}
+
+// ===== FULL OVERVIEW (Company/Platform) =====
+function _renderFullOverview(data,label,tableId){
   var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
-  var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table style="width:100%"><thead><tr>';
-  h+='<th style="text-align:left;width:12%">'+label+'</th><th>REVENUE</th><th>COP</th><th>RETURNS</th><th>ADVT</th><th>TRANSFER</th><th>PROFIT</th><th>REV PROFIT %</th><th>COP PROFIT %</th><th>/UNIT PROFIT</th>';
-  h+='</tr></thead>';
-  // Total counts row
-  var tRevC=0,tRetC=0,tAdC=0,tTrC=0;
-  for(var i=0;i<keys.length;i++){var d=data[keys[i]];tRevC+=(d.revCount||0);tRetC+=(d.retCount||0);tAdC+=(d.adCount||0);tTrC+=(d.trCount||0);}
-  var tNetU=tRevC-tRetC;
-  h+='<tbody>';
-  h+='<tr style="background:#0a1628;font-size:9px;color:#666"><td style="text-align:left;color:#666;font-style:italic">UNITS</td>';
-  h+='<td>'+fmt(tRevC)+'</td><td>'+fmt(tRevC)+'</td><td>'+fmt(tRetC)+'</td><td>'+fmt(tAdC)+'</td><td>'+fmt(tTrC)+'</td>';
-  h+='<td style="color:#4fc3f7">Net: '+fmt(tNetU)+'</td><td></td><td></td><td></td></tr>';
-  var totR=0,totC=0,totRet=0,totAd=0,totTr=0,totP=0;
+  var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
+  var cols=['REVENUE','COP','RETURNS','ADVT','TRANSFER','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT'];
+  h+='<th style="text-align:left;min-width:120px" onclick="_sortTable(\''+tableId+'\',0,false)">'+label+' <span class="arrow"></span></th>';
+  for(var ci=0;ci<cols.length;ci++){
+    var isN=true;
+    h+='<th onclick="_sortTable(\''+tableId+'\','+(ci+1)+','+isN+')">'+cols[ci]+' <span class="arrow"></span></th>';
+  }
+  h+='</tr></thead><tbody>';
+  // Filter row
+  h+='<tr class="flt-row"><td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';
+  for(var ci=0;ci<cols.length;ci++){
+    h+='<td><div style="display:flex;gap:2px"><select style="width:40px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';
+  }
+  h+='</tr>';
+  var totR=0,totC=0,totRet=0,totAd=0,totTr=0,totP=0,tRevC=0,tRetC=0;
   for(var i=0;i<keys.length;i++){
     var k=keys[i];var d=data[k];
-    var plClass=d.profit>=0?'profit':'loss';
-    var plSign=d.profit>=0?'+':'';
+    var netUnits=(d.revCount||0)-(d.retCount||0);
     var revPct=d.revenue>0?((d.profit/d.revenue)*100):0;
     var copPct=d.cop>0?((d.profit/d.cop)*100):0;
-    var netUnits=(d.revCount||0)-(d.retCount||0);
     var unitProfit=netUnits>0?(d.profit/netUnits):0;
     var color=PL_COLORS[i%PL_COLORS.length];
-    totR+=d.revenue;totC+=d.cop;totRet+=d.returns;totAd+=d.ad;totTr+=d.transfer;totP+=d.profit;
+    totR+=d.revenue;totC+=d.cop;totRet+=d.returns;totAd+=d.ad;totTr+=d.transfer;totP+=d.profit;tRevC+=(d.revCount||0);tRetC+=(d.retCount||0);
     h+='<tr>';
-    h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+k+'</td>';
-    h+='<td style="color:#39ff14;font-weight:600">'+fmtCur(d.revenue)+'</td>';
-    h+='<td style="color:#e09f3e;font-weight:600">-'+fmtCur(d.cop)+'</td>';
-    h+='<td style="color:#dc2f02;font-weight:600">-'+fmtCur(d.returns)+'</td>';
-    h+='<td style="color:#a855f7;font-weight:600">-'+fmtCur(d.ad)+'</td>';
-    h+='<td style="color:#4fc3f7;font-weight:600">'+fmtCur(d.transfer)+'</td>';
-    h+='<td class="'+plClass+'" style="font-weight:700">'+plSign+fmtCur(d.profit)+'</td>';
-    h+='<td class="'+(revPct>=0?'profit':'loss')+'" style="font-weight:600">'+fmtPct(revPct)+'</td>';
-    h+='<td class="'+(copPct>=0?'profit':'loss')+'" style="font-weight:600">'+fmtPct(copPct)+'</td>';
-    h+='<td style="color:#fff;font-weight:600">'+fmtCur(unitProfit)+'</td>';
+    h+='<td data-v="'+k+'" style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+k+'</td>';
+    h+='<td data-v="'+d.revenue+'">'+_vc(d.revenue,d.revCount||0,'#39ff14')+'</td>';
+    h+='<td data-v="'+d.cop+'">'+_vc(d.cop,d.revCount||0,'#ff6e00','-')+'</td>';
+    h+='<td data-v="'+d.returns+'">'+_vc(d.returns,d.retCount||0,'#ff003c','-')+'</td>';
+    h+='<td data-v="'+d.ad+'">'+_vc(d.ad,d.adCount||0,'#bf00ff','-')+'</td>';
+    h+='<td data-v="'+d.transfer+'">'+_vc(d.transfer,d.trCount||0,'#4fc3f7')+'</td>';
+    h+='<td data-v="'+d.profit+'">'+_vcProfit(d.profit,netUnits)+'</td>';
+    h+='<td data-v="'+revPct+'">'+_vcPct(revPct,revPct>=0?'profit':'loss')+'</td>';
+    h+='<td data-v="'+copPct+'">'+_vcPct(copPct,copPct>=0?'profit':'loss')+'</td>';
+    var upCls=unitProfit>=0?'profit':'loss';
+    h+='<td data-v="'+unitProfit+'" class="'+upCls+'" style="font-weight:600">'+fmtCur(unitProfit)+'</td>';
     h+='</tr>';
-    // Per-entity count row
-    h+='<tr style="background:#0a1628;font-size:9px;color:#555"><td></td>';
-    h+='<td>'+fmt(d.revCount||0)+'</td><td>'+fmt(d.revCount||0)+'</td><td>'+fmt(d.retCount||0)+'</td><td>'+fmt(d.adCount||0)+'</td><td>'+fmt(d.trCount||0)+'</td>';
-    h+='<td style="color:#4fc3f7">Net: '+fmt(netUnits)+'</td><td></td><td></td><td></td></tr>';
   }
-  var totPClass=totP>=0?'profit':'loss';
-  var totPSign=totP>=0?'+':'';
+  var totNet=tRevC-tRetC;
   var totRevPct=totR>0?((totP/totR)*100):0;
   var totCopPct=totC>0?((totP/totC)*100):0;
-  var totNetU2=tRevC-tRetC;
-  var totUnitP=totNetU2>0?(totP/totNetU2):0;
-  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
-  h+='<td style="text-align:left;color:#4fc3f7;font-weight:700">TOTAL</td>';
-  h+='<td style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</td>';
-  h+='<td style="color:#e09f3e;font-weight:700">-'+fmtCur(totC)+'</td>';
-  h+='<td style="color:#dc2f02;font-weight:700">-'+fmtCur(totRet)+'</td>';
-  h+='<td style="color:#a855f7;font-weight:700">-'+fmtCur(totAd)+'</td>';
-  h+='<td style="color:#4fc3f7;font-weight:700">'+fmtCur(totTr)+'</td>';
-  h+='<td class="'+totPClass+'" style="font-weight:700">'+totPSign+fmtCur(totP)+'</td>';
-  h+='<td class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
-  h+='<td class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
-  h+='<td style="color:#fff;font-weight:700">'+fmtCur(totUnitP)+'</td>';
+  var totUP=totNet>0?(totP/totNet):0;
+  var tpCls=totP>=0?'profit':'loss';
+  h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
+  h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40">TOTAL</td>';
+  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
+  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
+  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">('+fmt(tRetC)+')</span></td>';
+  h+='<td data-v="'+totAd+'"><span style="color:#bf00ff;font-weight:700">-'+fmtCur(totAd)+'</span></td>';
+  h+='<td data-v="'+totTr+'"><span style="color:#4fc3f7;font-weight:700">'+fmtCur(totTr)+'</span></td>';
+  h+='<td data-v="'+totP+'">'+_vcProfit(totP,totNet)+'</td>';
+  h+='<td data-v="'+totRevPct+'" class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
+  h+='<td data-v="'+totCopPct+'" class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
+  h+='<td data-v="'+totUP+'" class="'+tpCls+'" style="font-weight:700">'+fmtCur(totUP)+'</td>';
   h+='</tr></tbody></table></div></div>';
   return h;
 }
 
-// Render overview table with limited columns (Category/SubCategory/Product/SKU: Rev, COP, Returns, Profit, REV PROFIT %, COP PROFIT %, /UNIT PROFIT — no Ad/Transfer)
-function _renderLimitedOverview(data,label){
+// ===== LIMITED OVERVIEW (Category/SubCategory/Product) =====
+function _renderLimitedOverview(data,label,tableId,showCount){
   var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
-  var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table style="width:100%"><thead><tr>';
-  h+='<th style="text-align:left;width:18%">'+label+'</th><th>REVENUE</th><th>COP</th><th>RETURNS</th><th>PROFIT</th><th>REV PROFIT %</th><th>COP PROFIT %</th><th>/UNIT PROFIT</th>';
-  h+='</tr></thead>';
-  // Total counts row
-  var tRevC=0,tRetC=0;
-  for(var i=0;i<keys.length;i++){var d=data[keys[i]];tRevC+=(d.revCount||0);tRetC+=(d.retCount||0);}
-  var tNetU=tRevC-tRetC;
-  h+='<tbody>';
-  h+='<tr style="background:#0a1628;font-size:9px;color:#666"><td style="text-align:left;color:#666;font-style:italic">UNITS</td>';
-  h+='<td>'+fmt(tRevC)+'</td><td>'+fmt(tRevC)+'</td><td>'+fmt(tRetC)+'</td>';
-  h+='<td style="color:#4fc3f7">Net: '+fmt(tNetU)+'</td><td></td><td></td><td></td></tr>';
-  var totR=0,totC=0,totRet=0,totP=0;
+  if(showCount){
+    var cntEl=document.getElementById('cnt'+showCount);
+    if(cntEl)cntEl.textContent=' ('+keys.length+')';
+  }
+  var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
+  var cols=['REVENUE','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT'];
+  h+='<th style="text-align:left;min-width:140px" onclick="_sortTable(\''+tableId+'\',0,false)">'+label+' <span class="arrow"></span></th>';
+  for(var ci=0;ci<cols.length;ci++){
+    h+='<th onclick="_sortTable(\''+tableId+'\','+(ci+1)+',true)">'+cols[ci]+' <span class="arrow"></span></th>';
+  }
+  h+='</tr></thead><tbody>';
+  // Filter row
+  h+='<tr class="flt-row"><td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';
+  for(var ci=0;ci<cols.length;ci++){
+    h+='<td><div style="display:flex;gap:2px"><select style="width:40px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';
+  }
+  h+='</tr>';
+  var totR=0,totC=0,totRet=0,totP=0,tRevC=0,tRetC=0;
   for(var i=0;i<keys.length;i++){
     var k=keys[i];var d=data[k];
     var rev=d.revenue||0;var cop=Math.abs(d.cop||0);var ret=Math.abs(d.returns||0);
     var profit=rev-cop-ret;
-    var plClass=profit>=0?'profit':'loss';
-    var plSign=profit>=0?'+':'';
-    var revPct=rev>0?((profit/rev)*100):0;
-    var copPct=cop>0?((profit/cop)*100):0;
     var revCount=d.revCount||0;var retCount=d.retCount||0;
     var netUnits=revCount-retCount;
+    var revPct=rev>0?((profit/rev)*100):0;
+    var copPct=cop>0?((profit/cop)*100):0;
     var unitProfit=netUnits>0?(profit/netUnits):0;
     var color=PL_COLORS[i%PL_COLORS.length];
-    totR+=rev;totC+=cop;totRet+=ret;totP+=profit;
+    totR+=rev;totC+=cop;totRet+=ret;totP+=profit;tRevC+=revCount;tRetC+=retCount;
     h+='<tr>';
-    h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+k+'</td>';
-    h+='<td style="color:#39ff14;font-weight:600">'+fmtCur(rev)+'</td>';
-    h+='<td style="color:#e09f3e;font-weight:600">-'+fmtCur(cop)+'</td>';
-    h+='<td style="color:#dc2f02;font-weight:600">-'+fmtCur(ret)+'</td>';
-    h+='<td class="'+plClass+'" style="font-weight:700">'+plSign+fmtCur(profit)+'</td>';
-    h+='<td class="'+(revPct>=0?'profit':'loss')+'" style="font-weight:600">'+fmtPct(revPct)+'</td>';
-    h+='<td class="'+(copPct>=0?'profit':'loss')+'" style="font-weight:600">'+fmtPct(copPct)+'</td>';
-    h+='<td style="color:#fff;font-weight:600">'+fmtCur(unitProfit)+'</td>';
+    h+='<td data-v="'+k+'" style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+k+'</td>';
+    h+='<td data-v="'+rev+'">'+_vc(rev,revCount,'#39ff14')+'</td>';
+    h+='<td data-v="'+cop+'">'+_vc(cop,revCount,'#ff6e00','-')+'</td>';
+    h+='<td data-v="'+ret+'">'+_vc(ret,retCount,'#ff003c','-')+'</td>';
+    h+='<td data-v="'+profit+'">'+_vcProfit(profit,netUnits)+'</td>';
+    h+='<td data-v="'+revPct+'">'+_vcPct(revPct,revPct>=0?'profit':'loss')+'</td>';
+    h+='<td data-v="'+copPct+'">'+_vcPct(copPct,copPct>=0?'profit':'loss')+'</td>';
+    var upCls=unitProfit>=0?'profit':'loss';
+    h+='<td data-v="'+unitProfit+'" class="'+upCls+'" style="font-weight:600">'+fmtCur(unitProfit)+'</td>';
     h+='</tr>';
-    // Per-entity count row
-    h+='<tr style="background:#0a1628;font-size:9px;color:#555"><td></td>';
-    h+='<td>'+fmt(revCount)+'</td><td>'+fmt(revCount)+'</td><td>'+fmt(retCount)+'</td>';
-    h+='<td style="color:#4fc3f7">Net: '+fmt(netUnits)+'</td><td></td><td></td><td></td></tr>';
   }
-  var totPClass=totP>=0?'profit':'loss';
-  var totPSign=totP>=0?'+':'';
+  var totNet=tRevC-tRetC;
   var totRevPct=totR>0?((totP/totR)*100):0;
   var totCopPct=totC>0?((totP/totC)*100):0;
-  var totNetU2=tRevC-tRetC;
-  var totUnitP=totNetU2>0?(totP/totNetU2):0;
-  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
-  h+='<td style="text-align:left;color:#4fc3f7;font-weight:700">TOTAL</td>';
-  h+='<td style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</td>';
-  h+='<td style="color:#e09f3e;font-weight:700">-'+fmtCur(totC)+'</td>';
-  h+='<td style="color:#dc2f02;font-weight:700">-'+fmtCur(totRet)+'</td>';
-  h+='<td class="'+totPClass+'" style="font-weight:700">'+totPSign+fmtCur(totP)+'</td>';
-  h+='<td class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
-  h+='<td class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
-  h+='<td style="color:#fff;font-weight:700">'+fmtCur(totUnitP)+'</td>';
+  var totUP=totNet>0?(totP/totNet):0;
+  var tpCls=totP>=0?'profit':'loss';
+  h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
+  h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40">TOTAL</td>';
+  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
+  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
+  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">('+fmt(tRetC)+')</span></td>';
+  h+='<td data-v="'+totP+'">'+_vcProfit(totP,totNet)+'</td>';
+  h+='<td data-v="'+totRevPct+'" class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
+  h+='<td data-v="'+totCopPct+'" class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
+  h+='<td data-v="'+totUP+'" class="'+tpCls+'" style="font-weight:700">'+fmtCur(totUP)+'</td>';
+  h+='</tr></tbody></table></div></div>';
+  return h;
+}
+
+// ===== SKU OVERVIEW (with Platform + Company columns) =====
+function _renderSKUOverview(data,tableId){
+  var searchQ=(document.getElementById('skuSearch')?document.getElementById('skuSearch').value:'').trim().toLowerCase();
+  var allKeys=Object.keys(data);
+  // Filter by search
+  var keys=[];
+  for(var i=0;i<allKeys.length;i++){
+    var d=data[allKeys[i]];
+    var txt=((d.platform||'')+' '+(d.company||'')+' '+(d.sku||'')+' '+allKeys[i]).toLowerCase();
+    if(!searchQ||txt.indexOf(searchQ)>-1)keys.push(allKeys[i]);
+  }
+  keys.sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
+  var cntEl=document.getElementById('cntSKU');
+  if(cntEl)cntEl.textContent=' ('+keys.length+' of '+allKeys.length+')';
+  if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
+  var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
+  var cols=['PLATFORM','COMPANY','SKU','REVENUE','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT'];
+  for(var ci=0;ci<cols.length;ci++){
+    var isN=ci>=3;
+    var align=ci<3?'text-align:left;':'';
+    var minW=ci===2?'min-width:160px;':ci<2?'min-width:100px;':'';
+    h+='<th style="'+align+minW+'" onclick="_sortTable(\''+tableId+'\','+ci+','+isN+')">'+cols[ci]+' <span class="arrow"></span></th>';
+  }
+  h+='</tr></thead><tbody>';
+  // Filter row
+  h+='<tr class="flt-row">';
+  for(var ci=0;ci<cols.length;ci++){
+    if(ci<3){h+='<td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';}
+    else{h+='<td><div style="display:flex;gap:2px"><select style="width:40px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';}
+  }
+  h+='</tr>';
+  var totR=0,totC=0,totRet=0,totP=0,tRevC=0,tRetC=0;
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var d=data[k];
+    var rev=d.revenue||0;var cop=Math.abs(d.cop||0);var ret=Math.abs(d.returns||0);
+    var profit=rev-cop-ret;
+    var revCount=d.revCount||0;var retCount=d.retCount||0;
+    var netUnits=revCount-retCount;
+    var revPct=rev>0?((profit/rev)*100):0;
+    var copPct=cop>0?((profit/cop)*100):0;
+    var unitProfit=netUnits>0?(profit/netUnits):0;
+    var color=PL_COLORS[i%PL_COLORS.length];
+    totR+=rev;totC+=cop;totRet+=ret;totP+=profit;tRevC+=revCount;tRetC+=retCount;
+    h+='<tr>';
+    h+='<td data-v="'+(d.platform||'')+'" style="text-align:left;border-left:4px solid '+color+';font-weight:600;color:#4fc3f7">'+(d.platform||'-')+'</td>';
+    h+='<td data-v="'+(d.company||'')+'" style="text-align:left;font-weight:600;color:#fff">'+(d.company||'-')+'</td>';
+    h+='<td data-v="'+(d.sku||'')+'" style="text-align:left;font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+(d.sku||k)+'</td>';
+    h+='<td data-v="'+rev+'">'+_vc(rev,revCount,'#39ff14')+'</td>';
+    h+='<td data-v="'+cop+'">'+_vc(cop,revCount,'#ff6e00','-')+'</td>';
+    h+='<td data-v="'+ret+'">'+_vc(ret,retCount,'#ff003c','-')+'</td>';
+    h+='<td data-v="'+profit+'">'+_vcProfit(profit,netUnits)+'</td>';
+    h+='<td data-v="'+revPct+'">'+_vcPct(revPct,revPct>=0?'profit':'loss')+'</td>';
+    h+='<td data-v="'+copPct+'">'+_vcPct(copPct,copPct>=0?'profit':'loss')+'</td>';
+    var upCls=unitProfit>=0?'profit':'loss';
+    h+='<td data-v="'+unitProfit+'" class="'+upCls+'" style="font-weight:600">'+fmtCur(unitProfit)+'</td>';
+    h+='</tr>';
+  }
+  var totNet=tRevC-tRetC;
+  var totRevPct=totR>0?((totP/totR)*100):0;
+  var totCopPct=totC>0?((totP/totC)*100):0;
+  var totUP=totNet>0?(totP/totNet):0;
+  var tpCls=totP>=0?'profit':'loss';
+  h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
+  h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40" colspan="3">TOTAL ('+keys.length+' SKUs)</td>';
+  h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
+  h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">('+fmt(tRevC)+')</span></td>';
+  h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">('+fmt(tRetC)+')</span></td>';
+  h+='<td data-v="'+totP+'">'+_vcProfit(totP,totNet)+'</td>';
+  h+='<td data-v="'+totRevPct+'" class="'+(totRevPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totRevPct)+'</td>';
+  h+='<td data-v="'+totCopPct+'" class="'+(totCopPct>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totCopPct)+'</td>';
+  h+='<td data-v="'+totUP+'" class="'+tpCls+'" style="font-weight:700">'+fmtCur(totUP)+'</td>';
   h+='</tr></tbody></table></div></div>';
   return h;
 }
 
 function renderCompanyOverview(){
   var data=_buildOverview('company');
-  document.getElementById('ovCompanyContent').innerHTML=_renderFullOverview(data,'COMPANY');
+  document.getElementById('ovCompanyContent').innerHTML=_renderFullOverview(data,'COMPANY','tblCompany');
 }
 function renderPlatformOverview(){
   var data=_buildOverview('platform');
-  document.getElementById('ovPlatformContent').innerHTML=_renderFullOverview(data,'PLATFORM');
+  document.getElementById('ovPlatformContent').innerHTML=_renderFullOverview(data,'PLATFORM','tblPlatform');
 }
 function renderCategoryOverview(){
   var catData=DATA.byCategory||{};
-  document.getElementById('ovCategoryContent').innerHTML=_renderLimitedOverview(catData,'CATEGORY');
+  document.getElementById('ovCategoryContent').innerHTML=_renderLimitedOverview(catData,'CATEGORY','tblCategory');
 }
 function renderSubCategoryOverview(){
   var subCatData=DATA.bySubCategory||{};
-  document.getElementById('ovSubCategoryContent').innerHTML=_renderLimitedOverview(subCatData,'SUB CATEGORY');
+  document.getElementById('ovSubCategoryContent').innerHTML=_renderLimitedOverview(subCatData,'SUB CATEGORY','tblSubCat');
 }
 function renderProductOverview(){
   var prodData=DATA.byProduct||{};
-  document.getElementById('ovProductContent').innerHTML=_renderLimitedOverview(prodData,'PRODUCT');
+  document.getElementById('ovProductContent').innerHTML=_renderLimitedOverview(prodData,'PRODUCT','tblProduct','Product');
 }
 function renderSKUOverview(){
   var skuData=DATA.bySKU||{};
-  document.getElementById('ovSKUContent').innerHTML=_renderLimitedOverview(skuData,'SKU');
+  document.getElementById('ovSKUContent').innerHTML=_renderSKUOverview(skuData,'tblSKU');
 }
-
-// (P&L Split charts removed — replaced by overview tables)
-
-// (Old render functions removed — replaced by overview tables)
 
 // ===== MODAL FUNCTIONS =====
 function openModal(title,html){
@@ -720,7 +877,6 @@ function closeModal(){
 }
 
 function modalBack(){
-  // Type card drill-down back
   if(PL_DM.type==='typeCard'&&PL_DM.level===2){
     PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
     document.getElementById('modalTitle').textContent=PL_DM.typeName+' - Platform Breakdown';
@@ -728,7 +884,6 @@ function modalBack(){
     renderTypeDrillPlatforms();
     return;
   }
-  // P&L drill-down back navigation
   if(PL_DM.level===2){
     PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
     var label=plDrillLabel(PL_DM.type);
@@ -743,8 +898,6 @@ function modalBack(){
     openModal(prev.title,prev.html);
   }
 }
-
-// (Old modal functions removed — replaced by overview tables)
 
 // ===== ACCORDION =====
 function toggleAcc(section){
