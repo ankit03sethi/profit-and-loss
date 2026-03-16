@@ -253,12 +253,13 @@ function populateFilters(d){
   var months=d.availableMonths||[];
   var years=d.availableYears||[];
 
-  // Deduplicate months case-insensitively, keep first occurrence
+  // Deduplicate months case-insensitively, keep first occurrence, then reverse (latest first)
   var mSeen={},uniqueMonths=[];
   for(var i=0;i<months.length;i++){
     var mKey=String(months[i]).toLowerCase();
     if(!mSeen[mKey]){mSeen[mKey]=1;uniqueMonths.push(months[i]);}
   }
+  uniqueMonths.reverse();
   var mSel=document.getElementById('fMonth');
   var curM=mSel.value;
   var isFirstLoad=mSel.options.length<=1;
@@ -268,7 +269,7 @@ function populateFilters(d){
   }
   if(curM){mSel.value=curM;}
   else if(isFirstLoad&&uniqueMonths.length>0){
-    mSel.value=uniqueMonths[uniqueMonths.length-1];
+    mSel.value=uniqueMonths[0];
     applyFilter();
     return;
   }
