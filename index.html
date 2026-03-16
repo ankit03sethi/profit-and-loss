@@ -369,12 +369,45 @@ function renderPLCards(){
   }
 
   var h='';
-  // NET PROFIT card FIRST
-  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7">';
-  h+='<div class="lb">NET PROFIT</div>';
-  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(netProfit)+'</div>';
+  // 1. NET PROFIT card FIRST (bigger, green)
+  h+='<div class="cd g" style="cursor:pointer">';
+  h+='<div class="lb" style="color:#39ff14;font-weight:700">NET PROFIT</div>';
+  h+='<div class="vl" style="color:#39ff14;font-size:28px">'+fmtCur(netProfit)+'</div>';
   h+='</div>';
 
+  // 2. TRANSFER card
+  var trDataCard=td['Transfer'];
+  var trTotal=trDataCard?Math.abs(trDataCard.total):0;
+  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\'Transfer\')">';
+  h+='<div class="lb">TRANSFER</div>';
+  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(trTotal)+'</div>';
+  h+='</div>';
+
+  // 3. REQUIRED TRANSFER card
+  var reqTransfer=revenue - Math.abs(returns);
+  for(var ri=0;ri<TYPE_CARD_ORDER.length;ri++){
+    var rName=TYPE_CARD_ORDER[ri];
+    if(rName.toUpperCase()==='TRANSFER')continue;
+    var rData=td[rName];
+    var rTotal=rData?rData.total:0;
+    if(PROFIT_ADD[rName]){reqTransfer+=Math.abs(rTotal);}
+    else{reqTransfer-=Math.abs(rTotal);}
+  }
+  for(var ei2=0;ei2<allTypes.length;ei2++){
+    var eName2=allTypes[ei2];
+    if(TYPE_CARD_EXCLUDE[eName2])continue;
+    if(TYPE_CARD_ORDER.indexOf(eName2)!==-1)continue;
+    if(eName2.toUpperCase()==='TRANSFER')continue;
+    var eData2=td[eName2];
+    var eTotal2=eData2?eData2.total:0;
+    reqTransfer-=Math.abs(eTotal2);
+  }
+  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7">';
+  h+='<div class="lb">REQUIRED TRANSFER</div>';
+  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(reqTransfer)+'</div>';
+  h+='</div>';
+
+  // 4. ORDERS
   h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">ORDERS</div><div class="vl">'+fmtCur(revenue)+'</div></div>';
   h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#ff6e00">-'+fmtCur(Math.abs(cop))+'</div></div>';
   h+='<div class="cd r" style="cursor:pointer" onclick="openPLDrill(\'returns\')"><div class="lb">RETURNS</div><div class="vl" style="color:#ff003c">'+fmtCur(returns)+'</div></div>';
@@ -403,38 +436,6 @@ function renderPLCards(){
     h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(aTotal)+'</div>';
     h+='</div>';
   }
-
-  // REQUIRED TRANSFER card
-  var reqTransfer=revenue - Math.abs(returns);
-  for(var ri=0;ri<TYPE_CARD_ORDER.length;ri++){
-    var rName=TYPE_CARD_ORDER[ri];
-    if(rName.toUpperCase()==='TRANSFER')continue;
-    var rData=td[rName];
-    var rTotal=rData?rData.total:0;
-    if(PROFIT_ADD[rName]){reqTransfer+=Math.abs(rTotal);}
-    else{reqTransfer-=Math.abs(rTotal);}
-  }
-  for(var ei2=0;ei2<allTypes.length;ei2++){
-    var eName2=allTypes[ei2];
-    if(TYPE_CARD_EXCLUDE[eName2])continue;
-    if(TYPE_CARD_ORDER.indexOf(eName2)!==-1)continue;
-    if(eName2.toUpperCase()==='TRANSFER')continue;
-    var eData2=td[eName2];
-    var eTotal2=eData2?eData2.total:0;
-    reqTransfer-=Math.abs(eTotal2);
-  }
-  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7">';
-  h+='<div class="lb">REQUIRED TRANSFER</div>';
-  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(reqTransfer)+'</div>';
-  h+='</div>';
-
-  // Transfer card
-  var trDataCard=td['Transfer'];
-  var trTotal=trDataCard?Math.abs(trDataCard.total):0;
-  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\'Transfer\')">';
-  h+='<div class="lb">TRANSFER</div>';
-  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(trTotal)+'</div>';
-  h+='</div>';
 
   document.getElementById('plCards').innerHTML=h;
 }
