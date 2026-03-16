@@ -134,8 +134,8 @@ tr:hover td:first-child{background:#1f2b47}
 </div>
 
 <!-- COMPANY OVERVIEW -->
-<button class="acc-btn active" id="btn-ovCompany" onclick="toggleAcc('ovCompany')">COMPANY OVERVIEW <span id="arr-ovCompany">&#9650;</span></button>
-<div class="acc-content show" id="acc-ovCompany">
+<button class="acc-btn" id="btn-ovCompany" onclick="toggleAcc('ovCompany')">COMPANY OVERVIEW <span id="arr-ovCompany">&#9660;</span></button>
+<div class="acc-content" id="acc-ovCompany">
   <div id="ovCompanyContent"></div>
 </div>
 
@@ -166,7 +166,7 @@ tr:hover td:first-child{background:#1f2b47}
 <!-- SKU OVERVIEW -->
 <button class="acc-btn" id="btn-ovSKU" onclick="toggleAcc('ovSKU')">SKU OVERVIEW<span class="cnt-badge" id="cntSKU"></span> <span id="arr-ovSKU">&#9660;</span></button>
 <div class="acc-content" id="acc-ovSKU">
-  <input type="text" class="sku-search" id="skuSearch" placeholder="Search SKU, Platform, Company..." oninput="renderSKUOverview()">
+  <input type="text" class="sku-search" id="skuSearch" placeholder="Search SKU, Platform, Company, Category, Product..." oninput="renderSKUOverview()">
   <div id="ovSKUContent"></div>
 </div>
 
@@ -781,15 +781,14 @@ function _renderLimitedOverview(data,label,tableId,showCount){
   return h;
 }
 
-// ===== SKU OVERVIEW (with Platform + Company columns) =====
+// ===== SKU OVERVIEW (with Platform, Company, Category, Product columns) =====
 function _renderSKUOverview(data,tableId){
   var searchQ=(document.getElementById('skuSearch')?document.getElementById('skuSearch').value:'').trim().toLowerCase();
   var allKeys=Object.keys(data);
-  // Filter by search
   var keys=[];
   for(var i=0;i<allKeys.length;i++){
     var d=data[allKeys[i]];
-    var txt=((d.platform||'')+' '+(d.company||'')+' '+(d.sku||'')+' '+allKeys[i]).toLowerCase();
+    var txt=((d.platform||'')+' '+(d.company||'')+' '+(d.category||'')+' '+(d.product||'')+' '+(d.sku||'')+' '+allKeys[i]).toLowerCase();
     if(!searchQ||txt.indexOf(searchQ)>-1)keys.push(allKeys[i]);
   }
   keys.sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
@@ -797,18 +796,17 @@ function _renderSKUOverview(data,tableId){
   if(cntEl)cntEl.textContent=' ('+keys.length+' of '+allKeys.length+')';
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
   var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
-  var cols=['PLATFORM','COMPANY','SKU','REVENUE','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT'];
+  var cols=['PLATFORM','COMPANY','CATEGORY','PRODUCT','SKU','REVENUE','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT'];
   for(var ci=0;ci<cols.length;ci++){
-    var isN=ci>=3;
-    var align=ci<3?'text-align:left;':'';
-    var minW=ci===2?'min-width:160px;':ci<2?'min-width:100px;':'';
+    var isN=ci>=5;
+    var align=ci<5?'text-align:left;':'';
+    var minW=ci===4?'min-width:160px;':ci<4?'min-width:90px;':'';
     h+='<th style="'+align+minW+'" onclick="_sortTable(\''+tableId+'\','+ci+','+isN+')">'+cols[ci]+' <span class="arrow"></span></th>';
   }
   h+='</tr></thead><tbody>';
-  // Filter row
   h+='<tr class="flt-row">';
   for(var ci=0;ci<cols.length;ci++){
-    if(ci<3){h+='<td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';}
+    if(ci<5){h+='<td><input placeholder="Search..." oninput="_applyColFilter(\''+tableId+'\')"></td>';}
     else{h+='<td><div style="display:flex;gap:2px"><select style="width:55px" onchange="_applyColFilter(\''+tableId+'\')"><option value="gte">&ge;</option><option value="lte">&le;</option><option value="h2l">High&rarr;Low</option><option value="l2h">Low&rarr;High</option></select><input placeholder="0" style="width:50px" oninput="_applyColFilter(\''+tableId+'\')"></div></td>';}
   }
   h+='</tr>';
@@ -827,6 +825,8 @@ function _renderSKUOverview(data,tableId){
     h+='<tr>';
     h+='<td data-v="'+(d.platform||'')+'" style="text-align:left;border-left:4px solid '+color+';font-weight:600;color:#4fc3f7">'+(d.platform||'-')+'</td>';
     h+='<td data-v="'+(d.company||'')+'" style="text-align:left;font-weight:600;color:#fff">'+(d.company||'-')+'</td>';
+    h+='<td data-v="'+(d.category||'')+'" style="text-align:left;font-weight:600;color:#ff6e00">'+(d.category||'-')+'</td>';
+    h+='<td data-v="'+(d.product||'')+'" style="text-align:left;font-weight:600;color:#bf00ff">'+(d.product||'-')+'</td>';
     h+='<td data-v="'+(d.sku||'')+'" style="text-align:left;font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+(d.sku||k)+'</td>';
     h+='<td data-v="'+rev+'">'+_vc(rev,revCount,'#39ff14')+'</td>';
     h+='<td data-v="'+cop+'">'+_vc(cop,revCount,'#ff6e00','-')+'</td>';
@@ -844,7 +844,7 @@ function _renderSKUOverview(data,tableId){
   var totUP=totNet>0?(totP/totNet):0;
   var tpCls=totP>=0?'profit':'loss';
   h+='<tr class="tot-row" style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
-  h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40" colspan="3">TOTAL ('+keys.length+' SKUs)</td>';
+  h+='<td data-v="" style="text-align:left;color:#4fc3f7;font-weight:700;background:#0a1e40" colspan="5">TOTAL ('+keys.length+' SKUs)</td>';
   h+='<td data-v="'+totR+'"><span style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
   h+='<td data-v="'+totC+'"><span style="color:#ff6e00;font-weight:700">-'+fmtCur(totC)+'</span><span class="unit-cnt">'+fmt(tRevC)+'</span></td>';
   h+='<td data-v="'+totRet+'"><span style="color:#ff003c;font-weight:700">-'+fmtCur(totRet)+'</span><span class="unit-cnt">'+fmt(tRetC)+'</span></td>';
