@@ -345,8 +345,37 @@ function renderPLCards(){
   var revenue=pc.revenue||0;
   var cop=pc.cop||0;
   var returns=pc.returns||0;
+  var allTypes=Object.keys(td).sort();
+  var PROFIT_ADD={'Adjustment':1,'Reimbursements':1};
+
+  // Calculate Net Profit first: Revenue - COP - Returns - all type cards except Transfer
+  var netProfit=revenue - Math.abs(cop) - Math.abs(returns);
+  for(var ni=0;ni<TYPE_CARD_ORDER.length;ni++){
+    var nName=TYPE_CARD_ORDER[ni];
+    if(nName.toUpperCase()==='TRANSFER')continue;
+    var nData=td[nName];
+    var nTotal=nData?nData.total:0;
+    if(PROFIT_ADD[nName]){netProfit+=Math.abs(nTotal);}
+    else{netProfit-=Math.abs(nTotal);}
+  }
+  for(var ei=0;ei<allTypes.length;ei++){
+    var eName=allTypes[ei];
+    if(TYPE_CARD_EXCLUDE[eName])continue;
+    if(TYPE_CARD_ORDER.indexOf(eName)!==-1)continue;
+    if(eName.toUpperCase()==='TRANSFER')continue;
+    var eData=td[eName];
+    var eTotal=eData?eData.total:0;
+    netProfit-=Math.abs(eTotal);
+  }
+
   var h='';
-  h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">REVENUE</div><div class="vl">'+fmtCur(revenue)+'</div></div>';
+  // NET PROFIT card FIRST
+  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7">';
+  h+='<div class="lb">NET PROFIT</div>';
+  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(netProfit)+'</div>';
+  h+='</div>';
+
+  h+='<div class="cd g" style="cursor:pointer" onclick="openPLDrill(\'revenue\')"><div class="lb">ORDERS</div><div class="vl">'+fmtCur(revenue)+'</div></div>';
   h+='<div class="cd o" style="cursor:pointer" onclick="openPLDrill(\'cop\')"><div class="lb">COP (COST OF PRODUCT)</div><div class="vl" style="color:#ff6e00">-'+fmtCur(Math.abs(cop))+'</div></div>';
   h+='<div class="cd r" style="cursor:pointer" onclick="openPLDrill(\'returns\')"><div class="lb">RETURNS</div><div class="vl" style="color:#ff003c">'+fmtCur(returns)+'</div></div>';
 
@@ -362,7 +391,6 @@ function renderPLCards(){
     h+='</div>';
   }
 
-  var allTypes=Object.keys(td).sort();
   for(var ai=0;ai<allTypes.length;ai++){
     var aName=allTypes[ai];
     if(TYPE_CARD_EXCLUDE[aName])continue;
@@ -376,8 +404,7 @@ function renderPLCards(){
     h+='</div>';
   }
 
-  // REQUIRED TRANSFER card: same as Net Profit but WITHOUT COP
-  var PROFIT_ADD={'Adjustment':1,'Reimbursements':1};
+  // REQUIRED TRANSFER card
   var reqTransfer=revenue - Math.abs(returns);
   for(var ri=0;ri<TYPE_CARD_ORDER.length;ri++){
     var rName=TYPE_CARD_ORDER[ri];
@@ -401,36 +428,12 @@ function renderPLCards(){
   h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(reqTransfer)+'</div>';
   h+='</div>';
 
-  // Transfer card (moved here, after Required Transfer)
+  // Transfer card
   var trDataCard=td['Transfer'];
   var trTotal=trDataCard?Math.abs(trDataCard.total):0;
   h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7" onclick="openTypeDrill(\'Transfer\')">';
   h+='<div class="lb">TRANSFER</div>';
   h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(trTotal)+'</div>';
-  h+='</div>';
-
-  // Net Profit card: Revenue - COP - Returns - all type cards except Transfer
-  var netProfit=revenue - Math.abs(cop) - Math.abs(returns);
-  for(var ni=0;ni<TYPE_CARD_ORDER.length;ni++){
-    var nName=TYPE_CARD_ORDER[ni];
-    if(nName.toUpperCase()==='TRANSFER')continue;
-    var nData=td[nName];
-    var nTotal=nData?nData.total:0;
-    if(PROFIT_ADD[nName]){netProfit+=Math.abs(nTotal);}
-    else{netProfit-=Math.abs(nTotal);}
-  }
-  for(var ei=0;ei<allTypes.length;ei++){
-    var eName=allTypes[ei];
-    if(TYPE_CARD_EXCLUDE[eName])continue;
-    if(TYPE_CARD_ORDER.indexOf(eName)!==-1)continue;
-    if(eName.toUpperCase()==='TRANSFER')continue;
-    var eData=td[eName];
-    var eTotal=eData?eData.total:0;
-    netProfit-=Math.abs(eTotal);
-  }
-  h+='<div class="cd" style="cursor:pointer;border-left-color:#4fc3f7">';
-  h+='<div class="lb">NET PROFIT</div>';
-  h+='<div class="vl" style="color:#4fc3f7">'+fmtCur(netProfit)+'</div>';
   h+='</div>';
 
   document.getElementById('plCards').innerHTML=h;
@@ -528,7 +531,7 @@ function renderTypeDrillCompanies(){
 }
 
 // ===== P&L CARD DRILL-DOWN (Platform -> Company) =====
-function plDrillLabel(type){return type==='revenue'?'Revenue':type==='cop'?'COP (Cost of Product)':'Returns';}
+function plDrillLabel(type){return type==='revenue'?'Orders':type==='cop'?'COP (Cost of Product)':'Returns';}
 function plDrillColor(type){return type==='revenue'?'#39ff14':type==='cop'?'#ff6e00':'#ff003c';}
 
 function openPLDrill(type){
@@ -546,7 +549,7 @@ function renderPLDrillPlatforms(){
   var pc=DATA.plCards||{};
   var byPlat=PL_DM.type==='revenue'?pc.revenueByPlatform:PL_DM.type==='cop'?pc.copByPlatform:pc.returnsByPlatform;
   var clr=plDrillColor(PL_DM.type);
-  var lbl=PL_DM.type==='revenue'?'REVENUE':PL_DM.type==='cop'?'COP':'RETURNS';
+  var lbl=PL_DM.type==='revenue'?'ORDERS':PL_DM.type==='cop'?'COP':'RETURNS';
   if(!byPlat||!Object.keys(byPlat).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
   var keys=Object.keys(byPlat).sort(function(a,b){return Math.abs(byPlat[b].value)-Math.abs(byPlat[a].value);});
   var total=0;for(var i=0;i<keys.length;i++)total+=byPlat[keys[i]].value;
@@ -589,7 +592,7 @@ function renderPLDrillCompanies(){
   var pc=DATA.plCards||{};
   var byComp=PL_DM.type==='revenue'?pc.revenueByCompany:PL_DM.type==='cop'?pc.copByCompany:pc.returnsByCompany;
   var clr=plDrillColor(PL_DM.type);
-  var lbl=PL_DM.type==='revenue'?'REVENUE':PL_DM.type==='cop'?'COP':'RETURNS';
+  var lbl=PL_DM.type==='revenue'?'ORDERS':PL_DM.type==='cop'?'COP':'RETURNS';
   if(!byComp||!Object.keys(byComp).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
   var keys=Object.keys(byComp).sort(function(a,b){return Math.abs(byComp[b].value)-Math.abs(byComp[a].value);});
   var total=0;for(var i=0;i<keys.length;i++)total+=byComp[keys[i]].value;
@@ -752,7 +755,7 @@ function _renderFullOverview(data,label,tableId){
   var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
   var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
-  var cols=['REVENUE','COP','RETURNS','ADVT','TRANSFER','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
+  var cols=['ORDERS','COP','RETURNS','ADVT','TRANSFER','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
   h+='<th style="text-align:left;min-width:120px" onclick="_sortTable(\''+tableId+'\',0,false)">'+label+' <span class="arrow"></span></th>';
   for(var ci=0;ci<cols.length;ci++){
     var isN=true;
@@ -814,7 +817,7 @@ function _renderLimitedOverview(data,label,tableId,showCount){
   var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
   var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
-  var cols=['REVENUE','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
+  var cols=['ORDERS','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
   h+='<th style="text-align:left;min-width:140px" onclick="_sortTable(\''+tableId+'\',0,false)">'+label+' <span class="arrow"></span></th>';
   for(var ci=0;ci<cols.length;ci++){
     h+='<th onclick="_sortTable(\''+tableId+'\','+(ci+1)+',true)">'+cols[ci]+' <span class="arrow"></span></th>';
@@ -898,7 +901,7 @@ function _renderSKUOverview(data,tableId){
   keys.sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
   var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
-  var cols=['PLATFORM','COMPANY','CATEGORY','PRODUCT','SKU','REVENUE','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
+  var cols=['PLATFORM','COMPANY','CATEGORY','PRODUCT','SKU','ORDERS','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
   for(var ci=0;ci<cols.length;ci++){
     var isN=ci>=5;
     var align=ci<5?'text-align:left;':'';
@@ -1056,7 +1059,7 @@ function downloadCSV(){
   var bc=DATA.byCompany||{};
   var cKeys=Object.keys(bc).sort(function(a,b){return bc[b].amount-bc[a].amount;});
   cKeys.forEach(function(k){csv+='"'+k+'",'+bc[k].entries+','+bc[k].qty+','+bc[k].amount+'\n';});
-  csv+='\nMonth,Entries,QTY,Revenue,Costs,Net PL,Margin%\n';
+  csv+='\nMonth,Entries,QTY,Orders,Costs,Net PL,Margin%\n';
   var bm=DATA.byMonth||[];
   bm.forEach(function(m){
     var net=(m.revenue||0)+(m.costs||0);
