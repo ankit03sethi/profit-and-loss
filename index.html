@@ -530,18 +530,22 @@ function _buildOverview(entityType){
   return result;
 }
 
-// Render overview table with full columns (Company/Platform: Rev, COP, Returns, Ad, Transfer, Profit)
+// Render overview table with full columns (Company/Platform: Rev, COP, Returns, Ad, Transfer, Profit, %Profit, Profit/COP)
 function _renderFullOverview(data,label){
   var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
   var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table style="width:100%"><thead><tr>';
-  h+='<th style="text-align:left;width:18%">'+label+'</th><th>REVENUE</th><th>COP</th><th>RETURNS</th><th>ADVERTISEMENT</th><th>TRANSFER</th><th>PROFIT</th>';
+  h+='<th style="text-align:left;width:14%">'+label+'</th><th>REVENUE</th><th>COP</th><th>RETURNS</th><th>ADVT</th><th>TRANSFER</th><th>PROFIT</th><th>% PROFIT</th><th>PROFIT/COP</th>';
   h+='</tr></thead><tbody>';
   var totR=0,totC=0,totRet=0,totAd=0,totTr=0,totP=0;
   for(var i=0;i<keys.length;i++){
     var k=keys[i];var d=data[k];
     var plClass=d.profit>=0?'profit':'loss';
     var plSign=d.profit>=0?'+':'';
+    var pctProfit=d.revenue>0?((d.profit/d.revenue)*100):0;
+    var profitCop=d.cop>0?(d.profit/d.cop):0;
+    var pctClass=pctProfit>=0?'profit':'loss';
+    var ratioClass=profitCop>=0?'profit':'loss';
     var color=PL_COLORS[i%PL_COLORS.length];
     totR+=d.revenue;totC+=d.cop;totRet+=d.returns;totAd+=d.ad;totTr+=d.transfer;totP+=d.profit;
     h+='<tr>';
@@ -552,10 +556,14 @@ function _renderFullOverview(data,label){
     h+='<td style="color:#a855f7;font-weight:600">-'+fmtCur(d.ad)+'</td>';
     h+='<td style="color:#4fc3f7;font-weight:600">'+fmtCur(d.transfer)+'</td>';
     h+='<td class="'+plClass+'" style="font-weight:700">'+plSign+fmtCur(d.profit)+'</td>';
+    h+='<td class="'+pctClass+'" style="font-weight:600">'+fmtPct(pctProfit)+'</td>';
+    h+='<td class="'+ratioClass+'" style="font-weight:600">'+profitCop.toFixed(2)+'x</td>';
     h+='</tr>';
   }
   var totPClass=totP>=0?'profit':'loss';
   var totPSign=totP>=0?'+':'';
+  var totPctProfit=totR>0?((totP/totR)*100):0;
+  var totRatio=totC>0?(totP/totC):0;
   h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
   h+='<td style="text-align:left;color:#4fc3f7;font-weight:700">TOTAL</td>';
   h+='<td style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</td>';
@@ -564,41 +572,54 @@ function _renderFullOverview(data,label){
   h+='<td style="color:#a855f7;font-weight:700">-'+fmtCur(totAd)+'</td>';
   h+='<td style="color:#4fc3f7;font-weight:700">'+fmtCur(totTr)+'</td>';
   h+='<td class="'+totPClass+'" style="font-weight:700">'+totPSign+fmtCur(totP)+'</td>';
+  h+='<td class="'+(totPctProfit>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totPctProfit)+'</td>';
+  h+='<td class="'+(totRatio>=0?'profit':'loss')+'" style="font-weight:700">'+totRatio.toFixed(2)+'x</td>';
   h+='</tr></tbody></table></div></div>';
   return h;
 }
 
-// Render overview table with limited columns (Category/SubCategory: Rev, COP, Returns, Profit — no Ad/Transfer)
+// Render overview table with limited columns (Category/SubCategory: Rev, COP, Returns, Profit, %Profit, Profit/COP — no Ad/Transfer)
 function _renderLimitedOverview(data,label){
   var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
-  if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data available — needs Code.gs update for category columns</div>';
+  if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
   var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table style="width:100%"><thead><tr>';
-  h+='<th style="text-align:left;width:25%">'+label+'</th><th>REVENUE</th><th>COP</th><th>RETURNS</th><th>PROFIT</th>';
+  h+='<th style="text-align:left;width:20%">'+label+'</th><th>REVENUE</th><th>COP</th><th>RETURNS</th><th>PROFIT</th><th>% PROFIT</th><th>PROFIT/COP</th>';
   h+='</tr></thead><tbody>';
   var totR=0,totC=0,totRet=0,totP=0;
   for(var i=0;i<keys.length;i++){
     var k=keys[i];var d=data[k];
-    var profit=d.revenue-d.cop-d.returns;
+    var rev=d.revenue||0;var cop=Math.abs(d.cop||0);var ret=Math.abs(d.returns||0);
+    var profit=rev-cop-ret;
     var plClass=profit>=0?'profit':'loss';
     var plSign=profit>=0?'+':'';
+    var pctProfit=rev>0?((profit/rev)*100):0;
+    var profitCop=cop>0?(profit/cop):0;
+    var pctClass=pctProfit>=0?'profit':'loss';
+    var ratioClass=profitCop>=0?'profit':'loss';
     var color=PL_COLORS[i%PL_COLORS.length];
-    totR+=d.revenue;totC+=d.cop;totRet+=d.returns;totP+=profit;
+    totR+=rev;totC+=cop;totRet+=ret;totP+=profit;
     h+='<tr>';
     h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+k+'</td>';
-    h+='<td style="color:#39ff14;font-weight:600">'+fmtCur(d.revenue)+'</td>';
-    h+='<td style="color:#e09f3e;font-weight:600">-'+fmtCur(d.cop)+'</td>';
-    h+='<td style="color:#dc2f02;font-weight:600">-'+fmtCur(d.returns)+'</td>';
+    h+='<td style="color:#39ff14;font-weight:600">'+fmtCur(rev)+'</td>';
+    h+='<td style="color:#e09f3e;font-weight:600">-'+fmtCur(cop)+'</td>';
+    h+='<td style="color:#dc2f02;font-weight:600">-'+fmtCur(ret)+'</td>';
     h+='<td class="'+plClass+'" style="font-weight:700">'+plSign+fmtCur(profit)+'</td>';
+    h+='<td class="'+pctClass+'" style="font-weight:600">'+fmtPct(pctProfit)+'</td>';
+    h+='<td class="'+ratioClass+'" style="font-weight:600">'+profitCop.toFixed(2)+'x</td>';
     h+='</tr>';
   }
   var totPClass=totP>=0?'profit':'loss';
   var totPSign=totP>=0?'+':'';
+  var totPctProfit=totR>0?((totP/totR)*100):0;
+  var totRatio=totC>0?(totP/totC):0;
   h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7">';
   h+='<td style="text-align:left;color:#4fc3f7;font-weight:700">TOTAL</td>';
   h+='<td style="color:#39ff14;font-weight:700">'+fmtCur(totR)+'</td>';
   h+='<td style="color:#e09f3e;font-weight:700">-'+fmtCur(totC)+'</td>';
   h+='<td style="color:#dc2f02;font-weight:700">-'+fmtCur(totRet)+'</td>';
   h+='<td class="'+totPClass+'" style="font-weight:700">'+totPSign+fmtCur(totP)+'</td>';
+  h+='<td class="'+(totPctProfit>=0?'profit':'loss')+'" style="font-weight:700">'+fmtPct(totPctProfit)+'</td>';
+  h+='<td class="'+(totRatio>=0?'profit':'loss')+'" style="font-weight:700">'+totRatio.toFixed(2)+'x</td>';
   h+='</tr></tbody></table></div></div>';
   return h;
 }
@@ -612,21 +633,12 @@ function renderPlatformOverview(){
   document.getElementById('ovPlatformContent').innerHTML=_renderFullOverview(data,'PLATFORM');
 }
 function renderCategoryOverview(){
-  // Category data requires Code.gs to read category column — placeholder for now
   var catData=DATA.byCategory||{};
-  if(Object.keys(catData).length){
-    document.getElementById('ovCategoryContent').innerHTML=_renderLimitedOverview(catData,'CATEGORY');
-  } else {
-    document.getElementById('ovCategoryContent').innerHTML='<div style="color:#888;padding:20px;text-align:center;font-size:13px">Category overview requires Code.gs update to read category column (M-R)</div>';
-  }
+  document.getElementById('ovCategoryContent').innerHTML=_renderLimitedOverview(catData,'CATEGORY');
 }
 function renderSubCategoryOverview(){
   var subCatData=DATA.bySubCategory||{};
-  if(Object.keys(subCatData).length){
-    document.getElementById('ovSubCategoryContent').innerHTML=_renderLimitedOverview(subCatData,'SUB CATEGORY');
-  } else {
-    document.getElementById('ovSubCategoryContent').innerHTML='<div style="color:#888;padding:20px;text-align:center;font-size:13px">Sub Category overview requires Code.gs update to read sub category column (M-R)</div>';
-  }
+  document.getElementById('ovSubCategoryContent').innerHTML=_renderLimitedOverview(subCatData,'SUB CATEGORY');
 }
 
 // (P&L Split charts removed — replaced by overview tables)

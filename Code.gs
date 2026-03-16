@@ -438,6 +438,9 @@ function syncOne(name) {
     newRows.push(raw[i]);
   }
 
+  // Fix negative Transfer L values for Amazon
+  _fixTransferL(newRows);
+
   if (newRows.length > 0) {
     var lr = Math.max(ms.getLastRow(), 1);
     ms.getRange(lr + 1, 1, newRows.length, 12).setValues(newRows);
@@ -471,6 +474,9 @@ function syncAll() {
         if (!key) continue;
         newRows.push(raw[r]);
       }
+
+      // Fix negative Transfer L values for Amazon
+      _fixTransferL(newRows);
 
       if (newRows.length > 0) {
         var lr = Math.max(ms.getLastRow(), 1);
@@ -535,6 +541,8 @@ function runEverything() {
         if (!key) continue;
         newRows.push(raw[r]);
       }
+      // Fix negative Transfer L values for Amazon
+      _fixTransferL(newRows);
       if (newRows.length > 0) {
         var lr = Math.max(ms.getLastRow(), 1);
         ms.getRange(lr + 1, 1, newRows.length, 12).setValues(newRows);
@@ -686,6 +694,8 @@ function autoRefresh() {
           if (!key) continue;
           newRows.push(raw[r]);
         }
+        // Fix negative Transfer L values for Amazon
+        _fixTransferL(newRows);
         if (newRows.length > 0) {
           var lrNow = Math.max(ms.getLastRow(), 1);
           ms.getRange(lrNow + 1, 1, newRows.length, 12).setValues(newRows);
@@ -767,8 +777,8 @@ function doGet(e) {
     var filterMonth = (e && e.parameter && e.parameter.month) ? String(e.parameter.month).trim().toLowerCase() : '';
     var filterYear = (e && e.parameter && e.parameter.year) ? String(e.parameter.year).trim() : '';
 
-    // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT, T(col20), U(col21)
-    var colRanges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L','T2:T','U2:U'];
+    // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT, T(col20), U(col21), O=Category, P=SubCategory
+    var colRanges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L','T2:T','U2:U','O2:O','P2:P'];
     var ranges = [];
     for (var i = 0; i < colRanges.length; i++) ranges.push("'" + tab + "'!" + colRanges[i]);
     var res = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: ranges, valueRenderOption: 'UNFORMATTED_VALUE'});
@@ -782,7 +792,7 @@ function doGet(e) {
 
     var cols = [];
     for (var c = 0; c < vr.length; c++) cols.push(vr[c].values || []);
-    // cols: 0=total, 1=sno, 2=year, 3=month, 4=platform, 5=company, 6=type, 7=type2, 8=orderId, 9=sku, 10=qty, 11=amount, 12=T(col20), 13=U(col21)
+    // cols: 0=total, 1=sno, 2=year, 3=month, 4=platform, 5=company, 6=type, 7=type2, 8=orderId, 9=sku, 10=qty, 11=amount, 12=T(col20), 13=U(col21), 14=category(O), 15=subCategory(P)
 
     var summary = {totalEntries:0, totalQty:0, totalAmount:0};
     var byPlatform = {}, byCompany = {}, byType = {}, byType2 = {}, byMonthMap = {}, dailyMap = {};
@@ -791,6 +801,7 @@ function doGet(e) {
     var plRevenueByPlatform = {}, plRevenueByCompany = {};
     var plCOPByPlatform = {}, plCOPByCompany = {};
     var plReturnsByPlatform = {}, plReturnsByCompany = {};
+    var byCategory = {}, bySubCategory = {};
     var seenEntries = {};
 
     // Collect ALL unique months/years (before filtering) for dropdown population
@@ -818,6 +829,16 @@ function doGet(e) {
       var amount = _toNum(r < cols[11].length && cols[11][r].length > 0 ? cols[11][r][0] : 0);
       var colT = _toNum(r < cols[12].length && cols[12][r].length > 0 ? cols[12][r][0] : 0);
       var colU = _toNum(r < cols[13].length && cols[13][r].length > 0 ? cols[13][r][0] : 0);
+      var category = String(r < cols[14].length && cols[14][r].length > 0 ? cols[14][r][0] : '').trim() || 'Unknown';
+      var subCategory = String(r < cols[15].length && cols[15][r].length > 0 ? cols[15][r][0] : '').trim() || 'Unknown';
+
+      // Convert Transfer values to positive
+      var typeUpper = type.toUpperCase();
+      if (typeUpper === 'TRANSFER') {
+        amount = Math.abs(amount);
+        colT = Math.abs(colT);
+        colU = Math.abs(colU);
+      }
 
       // Month key for grouping
       var monthKey = '';
@@ -843,7 +864,6 @@ function doGet(e) {
       }
 
       // NEW P&L cards: Revenue = SUM(U) where G="Order", COP = SUM(T) where G="Order", Returns = SUM(U) where G="Return"
-      var typeUpper = type.toUpperCase();
       if (typeUpper === 'ORDER') {
         plCardRevenue += colU;
         plCOP += colT;
@@ -874,6 +894,22 @@ function doGet(e) {
         plReturnsByCompany[company].entries++;
       }
 
+      // byCategory & bySubCategory: Revenue/COP/Returns per category and subCategory
+      if (typeUpper === 'ORDER') {
+        if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0};
+        byCategory[category].revenue += colU;
+        byCategory[category].cop += colT;
+        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0};
+        bySubCategory[subCategory].revenue += colU;
+        bySubCategory[subCategory].cop += colT;
+      }
+      if (typeUpper === 'RETURN') {
+        if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0};
+        byCategory[category].returns += colU;
+        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0};
+        bySubCategory[subCategory].returns += colU;
+      }
+
       // byPlatform
       if (!byPlatform[platform]) byPlatform[platform] = {entries:0, qty:0, amount:0};
       byPlatform[platform].entries++;
@@ -896,9 +932,12 @@ function doGet(e) {
       if (!typeDetail[type]) typeDetail[type] = {total:0, entries:0, byPlatform:{}, byCompany:{}};
       typeDetail[type].total += amount;
       typeDetail[type].entries++;
-      if (!typeDetail[type].byPlatform[platform]) typeDetail[type].byPlatform[platform] = {value:0, entries:0};
+      if (!typeDetail[type].byPlatform[platform]) typeDetail[type].byPlatform[platform] = {value:0, entries:0, byCompany:{}};
       typeDetail[type].byPlatform[platform].value += amount;
       typeDetail[type].byPlatform[platform].entries++;
+      if (!typeDetail[type].byPlatform[platform].byCompany[company]) typeDetail[type].byPlatform[platform].byCompany[company] = {value:0, entries:0};
+      typeDetail[type].byPlatform[platform].byCompany[company].value += amount;
+      typeDetail[type].byPlatform[platform].byCompany[company].entries++;
       if (!typeDetail[type].byCompany[company]) typeDetail[type].byCompany[company] = {value:0, entries:0};
       typeDetail[type].byCompany[company].value += amount;
       typeDetail[type].byCompany[company].entries++;
@@ -926,10 +965,16 @@ function doGet(e) {
     for (var k in byPlatform) { byPlatform[k].amount = Math.round(byPlatform[k].amount * 100) / 100; byPlatform[k].qty = Math.round(byPlatform[k].qty * 100) / 100; }
     for (var k in byCompany) { byCompany[k].amount = Math.round(byCompany[k].amount * 100) / 100; byCompany[k].qty = Math.round(byCompany[k].qty * 100) / 100; }
     for (var k in byType) { byType[k].amount = Math.round(byType[k].amount * 100) / 100; byType[k].qty = Math.round(byType[k].qty * 100) / 100; }
+    // Round byCategory/bySubCategory
+    for (var k in byCategory) { byCategory[k].revenue = Math.round(byCategory[k].revenue * 100) / 100; byCategory[k].cop = Math.round(byCategory[k].cop * 100) / 100; byCategory[k].returns = Math.round(byCategory[k].returns * 100) / 100; }
+    for (var k in bySubCategory) { bySubCategory[k].revenue = Math.round(bySubCategory[k].revenue * 100) / 100; bySubCategory[k].cop = Math.round(bySubCategory[k].cop * 100) / 100; bySubCategory[k].returns = Math.round(bySubCategory[k].returns * 100) / 100; }
     // Round typeDetail
     for (var td in typeDetail) {
       typeDetail[td].total = Math.round(typeDetail[td].total * 100) / 100;
-      for (var tdp in typeDetail[td].byPlatform) { typeDetail[td].byPlatform[tdp].value = Math.round(typeDetail[td].byPlatform[tdp].value * 100) / 100; }
+      for (var tdp in typeDetail[td].byPlatform) {
+        typeDetail[td].byPlatform[tdp].value = Math.round(typeDetail[td].byPlatform[tdp].value * 100) / 100;
+        for (var tdpc in typeDetail[td].byPlatform[tdp].byCompany) { typeDetail[td].byPlatform[tdp].byCompany[tdpc].value = Math.round(typeDetail[td].byPlatform[tdp].byCompany[tdpc].value * 100) / 100; }
+      }
       for (var tdc in typeDetail[td].byCompany) { typeDetail[td].byCompany[tdc].value = Math.round(typeDetail[td].byCompany[tdc].value * 100) / 100; }
     }
     for (var k in byType2) { byType2[k].amount = Math.round(byType2[k].amount * 100) / 100; byType2[k].qty = Math.round(byType2[k].qty * 100) / 100; }
@@ -993,6 +1038,8 @@ function doGet(e) {
       plBreakdown: plBreakdown,
       plCards: plCards,
       typeDetail: typeDetail,
+      byCategory: byCategory,
+      bySubCategory: bySubCategory,
       platforms: Object.keys(byPlatform).sort(),
       companies: Object.keys(byCompany).sort(),
       types: Object.keys(byType).sort(),
@@ -1009,6 +1056,18 @@ function doGet(e) {
 
 function _jsonResp(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
 function _toNum(v) { if (v === '' || v === null || v === undefined) return 0; var n = Number(v); return isNaN(n) ? 0 : n; }
+
+// Fix Transfer column L: if platform contains "Amazon" and type = "Transfer", make L positive
+function _fixTransferL(rows) {
+  for (var i = 0; i < rows.length; i++) {
+    var plat = String(rows[i][4] || '').trim().toUpperCase();
+    var typ = String(rows[i][6] || '').trim().toUpperCase();
+    if (plat.indexOf('AMAZON') > -1 && typ === 'TRANSFER') {
+      var lVal = Number(rows[i][11]);
+      if (!isNaN(lVal) && lVal < 0) rows[i][11] = Math.abs(lVal);
+    }
+  }
+}
 function _monthToNum(m) {
   var months = {'january':'01','february':'02','march':'03','april':'04','may':'05','june':'06','july':'07','august':'08','september':'09','october':'10','november':'11','december':'12',
     'jan':'01','feb':'02','mar':'03','apr':'04','jun':'06','jul':'07','aug':'08','sep':'09','oct':'10','nov':'11','dec':'12'};
