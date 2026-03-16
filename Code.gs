@@ -773,8 +773,17 @@ function doGet(e) {
     var tz = Session.getScriptTimeZone();
     var now = new Date();
 
-    // Month filter: ?month=January&year=2025 (matches column D and C directly)
-    var filterMonth = (e && e.parameter && e.parameter.month) ? String(e.parameter.month).trim().toLowerCase() : '';
+    // Month filter: ?month=January,February&year=2025 (supports comma-separated months)
+    var filterMonthRaw = (e && e.parameter && e.parameter.month) ? String(e.parameter.month).trim() : '';
+    var filterMonths = {};
+    if (filterMonthRaw) {
+      var parts = filterMonthRaw.split(',');
+      for (var fm = 0; fm < parts.length; fm++) {
+        var fmv = parts[fm].trim().toLowerCase();
+        if (fmv) filterMonths[fmv] = true;
+      }
+    }
+    var hasMonthFilter = Object.keys(filterMonths).length > 0;
     var filterYear = (e && e.parameter && e.parameter.year) ? String(e.parameter.year).trim() : '';
 
     // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT, T(col20), U(col21), O=Category, P=SubCategory, Q=Product
@@ -850,7 +859,7 @@ function doGet(e) {
       }
 
       // Month/Year filter (column D = month name, column C = year)
-      if (filterMonth && String(month).trim().toLowerCase() !== filterMonth) continue;
+      if (hasMonthFilter && !filterMonths[String(month).trim().toLowerCase()]) continue;
       if (filterYear && year !== filterYear) continue;
 
       // Summary

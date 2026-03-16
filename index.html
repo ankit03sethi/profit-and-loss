@@ -51,6 +51,13 @@ tr:hover td{background:#1f2b47}
 .ft{text-align:center;color:#555;font-size:10px;margin-top:8px}
 .home-btn{background:none;border:none;cursor:pointer;padding:4px;position:absolute;left:0;top:50%;transform:translateY(-50%);display:flex;align-items:center}
 .home-btn svg{width:28px;height:28px;fill:none;stroke:#39ff14}
+/* Month toggle buttons */
+.mbtn{background:#0a1628;color:#888;border:2px solid #333;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:.2s;white-space:nowrap}
+.mbtn:hover{border-color:#39ff14;color:#eee}
+.mbtn.active{background:#39ff14;color:#0a1628;border-color:#39ff14}
+.mbtn-all{background:#0a1628;color:#4fc3f7;border:2px solid #4fc3f7;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:.2s}
+.mbtn-all:hover{background:#4fc3f7;color:#0a1628}
+.mbtn-all.active{background:#4fc3f7;color:#0a1628}
 /* Global search */
 .global-search{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:0}
 .global-search .gs-icon{background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center}
@@ -120,10 +127,8 @@ tr:hover td{background:#1f2b47}
 
 <!-- MONTH FILTER -->
 <div class="fbox">
-<div class="frow" style="flex-wrap:wrap;gap:6px">
-  <select id="fMonth" onchange="applyFilter()" style="background:#0a1628;color:#39ff14;border:1px solid #39ff14;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
-    <option value="">All Months</option>
-  </select>
+<div class="frow" style="flex-wrap:wrap;gap:6px;align-items:center">
+  <div id="monthBtns" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center"></div>
   <select id="fYear" onchange="applyFilter()" style="background:#0a1628;color:#ff6e00;border:1px solid #ff6e00;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
     <option value="">All Years</option>
   </select>
@@ -211,8 +216,37 @@ function fmtDec(n){return (n||0).toFixed(2);}
 function destroyChart(id){if(_charts[id]){_charts[id].destroy();delete _charts[id];}}
 
 // ===== LOAD DATA =====
+function getSelectedMonths(){
+  var btns=document.querySelectorAll('#monthBtns .mbtn.active');
+  var months=[];
+  for(var i=0;i<btns.length;i++)months.push(btns[i].getAttribute('data-month'));
+  return months;
+}
+function toggleAllMonths(){
+  var btns=document.querySelectorAll('#monthBtns .mbtn');
+  var allBtn=document.querySelector('#monthBtns .mbtn-all');
+  var allActive=allBtn&&allBtn.classList.contains('active');
+  if(allActive){
+    allBtn.classList.remove('active');
+    for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');
+  }else{
+    allBtn.classList.add('active');
+    for(var i=0;i<btns.length;i++)btns[i].classList.add('active');
+  }
+  applyFilter();
+}
+function updateMonthAllBtn(){
+  var btns=document.querySelectorAll('#monthBtns .mbtn');
+  var activeCnt=document.querySelectorAll('#monthBtns .mbtn.active').length;
+  var allBtn=document.querySelector('#monthBtns .mbtn-all');
+  if(allBtn){
+    if(activeCnt===btns.length)allBtn.classList.add('active');
+    else allBtn.classList.remove('active');
+  }
+}
 function loadData(){
-  var selMonth=document.getElementById('fMonth')?document.getElementById('fMonth').value:'';
+  var selMonths=getSelectedMonths();
+  var selMonth=selMonths.join(',');
   var selYear=document.getElementById('fYear')?document.getElementById('fYear').value:'';
 
   var fetchUrl=API_URL;
@@ -260,18 +294,30 @@ function populateFilters(d){
     if(!mSeen[mKey]){mSeen[mKey]=1;uniqueMonths.push(months[i]);}
   }
   uniqueMonths.reverse();
-  var mSel=document.getElementById('fMonth');
-  var curM=mSel.value;
-  var isFirstLoad=mSel.options.length<=1;
-  mSel.innerHTML='<option value="">All Months</option>';
-  for(var i=0;i<uniqueMonths.length;i++){
-    mSel.innerHTML+='<option value="'+uniqueMonths[i]+'">'+uniqueMonths[i]+'</option>';
-  }
-  if(curM){mSel.value=curM;}
-  else if(isFirstLoad&&uniqueMonths.length>0){
-    mSel.value=uniqueMonths[0];
-    applyFilter();
-    return;
+  var mBox=document.getElementById('monthBtns');
+  var isFirstLoad=!mBox.hasChildNodes();
+  if(isFirstLoad){
+    var allBtn=document.createElement('button');
+    allBtn.className='mbtn-all';
+    allBtn.textContent='All';
+    allBtn.onclick=function(){toggleAllMonths();};
+    mBox.appendChild(allBtn);
+    for(var i=0;i<uniqueMonths.length;i++){
+      var btn=document.createElement('button');
+      btn.className='mbtn';
+      btn.textContent=uniqueMonths[i].substring(0,3);
+      btn.setAttribute('data-month',uniqueMonths[i]);
+      btn.title=uniqueMonths[i];
+      btn.onclick=function(){this.classList.toggle('active');updateMonthAllBtn();applyFilter();};
+      mBox.appendChild(btn);
+    }
+    // Auto-select latest month on first load
+    if(uniqueMonths.length>0){
+      var firstBtn=mBox.querySelector('.mbtn');
+      if(firstBtn)firstBtn.classList.add('active');
+      applyFilter();
+      return;
+    }
   }
 
   // Deduplicate years
