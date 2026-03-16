@@ -314,16 +314,18 @@ function buildMonthButtons(monthsList){
   allBtn.textContent='All';
   allBtn.onclick=function(){toggleAllMonths();};
   mBox.appendChild(allBtn);
+  var anyRestored=false;
   for(var i=0;i<uniqueMonths.length;i++){
     var btn=document.createElement('button');
     btn.className='mbtn';
     btn.textContent=uniqueMonths[i].substring(0,3);
     btn.setAttribute('data-month',uniqueMonths[i]);
     btn.title=uniqueMonths[i];
+    if(prevActive[uniqueMonths[i]]){btn.classList.add('active');anyRestored=true;}
     btn.onclick=function(){this.classList.toggle('active');updateMonthAllBtn();applyFilter();};
     mBox.appendChild(btn);
   }
-  return uniqueMonths;
+  return {months:uniqueMonths, anyRestored:anyRestored};
 }
 
 function populateFilters(d){
@@ -352,7 +354,9 @@ function populateFilters(d){
     monthsToShow=_monthsByYear[selYear];
   }
 
-  var uniqueMonths=buildMonthButtons(monthsToShow);
+  var buildResult=buildMonthButtons(monthsToShow);
+  var uniqueMonths=buildResult.months;
+  var anyRestored=buildResult.anyRestored;
 
   if(_firstLoad){
     _firstLoad=false;
@@ -364,12 +368,12 @@ function populateFilters(d){
       return;
     }
   } else {
-    // Re-select previously active months that still exist, or select latest
-    var btns=document.querySelectorAll('#monthBtns .mbtn');
-    var anyReselected=false;
-    var prevMonths=getSelectedMonths();// will be empty since we rebuilt
-    // Just select the latest (first) month button
-    if(btns.length>0){btns[0].classList.add('active');anyReselected=true;}
+    // If previously active months were restored by buildMonthButtons, keep them
+    // Otherwise select the latest (first) month button
+    if(!anyRestored){
+      var btns=document.querySelectorAll('#monthBtns .mbtn');
+      if(btns.length>0){btns[0].classList.add('active');}
+    }
     updateMonthAllBtn();
   }
 }
@@ -388,9 +392,9 @@ function onYearChange(){
     // All years - show all months from DATA
     monthsToShow=DATA.availableMonths||[];
   }
-  var uniqueMonths=buildMonthButtons(monthsToShow);
-  // Auto-select latest month
-  if(uniqueMonths.length>0){
+  var buildResult=buildMonthButtons(monthsToShow);
+  // Auto-select latest month if none restored
+  if(!buildResult.anyRestored&&buildResult.months.length>0){
     var firstBtn=document.querySelector('#monthBtns .mbtn');
     if(firstBtn)firstBtn.classList.add('active');
   }
