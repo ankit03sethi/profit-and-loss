@@ -259,11 +259,17 @@ function populateFilters(d){
   }
   var mSel=document.getElementById('fMonth');
   var curM=mSel.value;
+  var isFirstLoad=mSel.options.length<=1;
   mSel.innerHTML='<option value="">All Months</option>';
   for(var i=0;i<uniqueMonths.length;i++){
     mSel.innerHTML+='<option value="'+uniqueMonths[i]+'">'+uniqueMonths[i]+'</option>';
   }
-  if(curM)mSel.value=curM;
+  if(curM){mSel.value=curM;}
+  else if(isFirstLoad&&uniqueMonths.length>0){
+    mSel.value=uniqueMonths[uniqueMonths.length-1];
+    applyFilter();
+    return;
+  }
 
   // Deduplicate years
   var ySeen={},uniqueYears=[];
@@ -370,9 +376,37 @@ function renderPLCards(){
     h+='</div>';
   }
 
+  // REQUIRED TRANSFER card: same as Net Profit but WITHOUT COP
+  var PROFIT_ADD={'Adjustment':1,'Reimbursements':1};
+  var reqTransfer=revenue - Math.abs(returns);
+  for(var ri=0;ri<TYPE_CARD_ORDER.length;ri++){
+    var rName=TYPE_CARD_ORDER[ri];
+    if(rName.toUpperCase()==='TRANSFER')continue;
+    var rData=td[rName];
+    var rTotal=rData?rData.total:0;
+    if(PROFIT_ADD[rName]){reqTransfer+=Math.abs(rTotal);}
+    else{reqTransfer-=Math.abs(rTotal);}
+  }
+  for(var ei2=0;ei2<allTypes.length;ei2++){
+    var eName2=allTypes[ei2];
+    if(TYPE_CARD_EXCLUDE[eName2])continue;
+    if(TYPE_CARD_ORDER.indexOf(eName2)!==-1)continue;
+    if(eName2.toUpperCase()==='TRANSFER')continue;
+    var eData2=td[eName2];
+    var eTotal2=eData2?eData2.total:0;
+    reqTransfer-=Math.abs(eTotal2);
+  }
+  var rtCls=reqTransfer>=0?'profit':'loss';
+  var rtSign=reqTransfer>=0?'+':'';
+  var rtColor=reqTransfer>=0?'#39ff14':'#ff003c';
+  var rtBorder=reqTransfer>=0?'#39ff14':'#ff003c';
+  h+='<div class="cd" style="border-left-color:'+rtBorder+';background:#0a1e40">';
+  h+='<div class="lb" style="color:#fff;font-weight:700">REQUIRED TRANSFER</div>';
+  h+='<div class="vl" style="color:'+rtColor+';font-size:26px">'+rtSign+fmtCur(reqTransfer)+'</div>';
+  h+='</div>';
+
   // Net Profit card: Revenue - COP - Returns - all type cards except Transfer
   var netProfit=revenue - Math.abs(cop) - Math.abs(returns);
-  var PROFIT_ADD={'Adjustment':1,'Reimbursements':1};
   for(var ni=0;ni<TYPE_CARD_ORDER.length;ni++){
     var nName=TYPE_CARD_ORDER[ni];
     if(nName.toUpperCase()==='TRANSFER')continue;
@@ -381,7 +415,6 @@ function renderPLCards(){
     if(PROFIT_ADD[nName]){netProfit+=Math.abs(nTotal);}
     else{netProfit-=Math.abs(nTotal);}
   }
-  // Also include any extra type cards (not in TYPE_CARD_ORDER, not excluded, not Transfer)
   for(var ei=0;ei<allTypes.length;ei++){
     var eName=allTypes[ei];
     if(TYPE_CARD_EXCLUDE[eName])continue;
@@ -398,7 +431,6 @@ function renderPLCards(){
   h+='<div class="cd" style="border-left-color:'+npBorder+';background:#0a1e40">';
   h+='<div class="lb" style="color:#fff;font-weight:700">NET PROFIT</div>';
   h+='<div class="vl" style="color:'+npColor+';font-size:26px">'+npSign+fmtCur(netProfit)+'</div>';
-  h+='<div style="font-size:9px;color:#888;margin-top:4px">Revenue - COP - Returns - Advt - WH - VAS - Aff - Charges + Adj + Reimb</div>';
   h+='</div>';
 
   document.getElementById('plCards').innerHTML=h;
