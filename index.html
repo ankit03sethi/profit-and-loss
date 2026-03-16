@@ -52,9 +52,12 @@ tr:hover td{background:#1f2b47}
 .home-btn{background:none;border:none;cursor:pointer;padding:4px;position:absolute;left:0;top:50%;transform:translateY(-50%);display:flex;align-items:center}
 .home-btn svg{width:28px;height:28px;fill:none;stroke:#39ff14}
 /* Global search */
-.global-search{position:absolute;right:0;top:50%;transform:translateY(-50%)}
-.global-search input{background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 10px;font-size:12px;width:180px}
-.global-search input:focus{border-color:#4fc3f7;outline:none}
+.global-search{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:0}
+.global-search .gs-icon{background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center}
+.global-search .gs-icon svg{width:24px;height:24px;fill:none;stroke:#39ff14;stroke-width:2}
+.global-search input{background:#0a0f1e;color:#eee;border:1px solid #39ff14;border-radius:6px;padding:5px 10px;font-size:12px;width:0;opacity:0;transition:width .3s,opacity .3s,padding .3s;overflow:hidden;padding:0}
+.global-search input.gs-open{width:180px;opacity:1;padding:5px 10px}
+.global-search input:focus{border-color:#39ff14;outline:none}
 /* Modal */
 .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);z-index:100;overflow-y:auto;padding:20px}
 .modal-overlay.show{display:block}
@@ -105,7 +108,7 @@ tr:hover td{background:#1f2b47}
 <div class="header-row">
   <button class="home-btn" onclick="location.reload()" title="Refresh"><svg viewBox="0 0 24 24"><path d="M4 12L12 4l8 8" stroke="#39ff14" stroke-width="1.5"/><path d="M6 10.5V19.5a.5.5 0 00.5.5H10v-5h4v5h3.5a.5.5 0 00.5-.5V10.5" stroke="#39ff14" stroke-width="1.5"/></svg></button>
   <div class="sub">PROFIT & LOSS</div>
-  <div class="global-search"><input type="text" id="globalSearch" placeholder="Search all..." oninput="globalSearchFilter()"></div>
+  <div class="global-search"><button class="gs-icon" onclick="toggleGlobalSearch()" title="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button><input type="text" id="globalSearch" placeholder="Search all..." oninput="globalSearchFilter()"></div>
 </div>
 
 <div id="loader" class="loading"><div class="spin"></div><br>Loading payment data...<br><span style="font-size:13px;color:#888">This may take a few seconds</span></div>
@@ -154,14 +157,19 @@ tr:hover td{background:#1f2b47}
 </div>
 
 <!-- PRODUCT OVERVIEW -->
-<button class="acc-btn" id="btn-ovProduct" onclick="toggleAcc('ovProduct')">PRODUCT OVERVIEW<span class="cnt-badge" id="cntProduct"></span> <span id="arr-ovProduct">&#9660;</span></button>
+<button class="acc-btn" id="btn-ovProduct" onclick="toggleAcc('ovProduct')">PRODUCT OVERVIEW <span id="arr-ovProduct">&#9660;</span></button>
 <div class="acc-content" id="acc-ovProduct">
   <div id="ovProductContent"></div>
 </div>
 
 <!-- SKU OVERVIEW -->
-<button class="acc-btn" id="btn-ovSKU" onclick="toggleAcc('ovSKU')">SKU OVERVIEW<span class="cnt-badge" id="cntSKU"></span> <span id="arr-ovSKU">&#9660;</span></button>
+<button class="acc-btn" id="btn-ovSKU" onclick="toggleAcc('ovSKU')">SKU OVERVIEW <span id="arr-ovSKU">&#9660;</span></button>
 <div class="acc-content" id="acc-ovSKU">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
+    <select id="skuFilterCat" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Categories</option></select>
+    <select id="skuFilterProd" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All Products</option></select>
+    <select id="skuFilterSKU" onchange="renderSKUOverview()" style="background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:130px"><option value="">All SKUs</option></select>
+  </div>
   <input type="text" class="sku-search" id="skuSearch" placeholder="Search SKU, Platform, Company, Category, Product..." oninput="renderSKUOverview()">
   <div id="ovSKUContent"></div>
 </div>
@@ -278,6 +286,17 @@ function renderAll(){
 }
 
 // ===== GLOBAL SEARCH =====
+function toggleGlobalSearch(){
+  var inp=document.getElementById('globalSearch');
+  if(inp.classList.contains('gs-open')){
+    inp.classList.remove('gs-open');
+    inp.value='';
+    globalSearchFilter();
+  }else{
+    inp.classList.add('gs-open');
+    inp.focus();
+  }
+}
 function globalSearchFilter(){
   var q=(document.getElementById('globalSearch').value||'').trim().toLowerCase();
   // Show/hide accordion sections based on match, highlight matching rows
@@ -719,10 +738,6 @@ function _renderFullOverview(data,label,tableId){
 function _renderLimitedOverview(data,label,tableId,showCount){
   var keys=Object.keys(data).sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
-  if(showCount){
-    var cntEl=document.getElementById('cnt'+showCount);
-    if(cntEl)cntEl.textContent=' ('+keys.length+')';
-  }
   var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
   var cols=['REVENUE','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
   h+='<th style="text-align:left;min-width:140px" onclick="_sortTable(\''+tableId+'\',0,false)">'+label+' <span class="arrow"></span></th>';
@@ -783,16 +798,29 @@ function _renderLimitedOverview(data,label,tableId,showCount){
 // ===== SKU OVERVIEW (with Platform, Company, Category, Product columns) =====
 function _renderSKUOverview(data,tableId){
   var searchQ=(document.getElementById('skuSearch')?document.getElementById('skuSearch').value:'').trim().toLowerCase();
+  var filterCat=(document.getElementById('skuFilterCat')?document.getElementById('skuFilterCat').value:'');
+  var filterProd=(document.getElementById('skuFilterProd')?document.getElementById('skuFilterProd').value:'');
+  var filterSKU=(document.getElementById('skuFilterSKU')?document.getElementById('skuFilterSKU').value:'');
   var allKeys=Object.keys(data);
+  // Populate dropdown options
+  var catSet={},prodSet={},skuSet={};
+  for(var j=0;j<allKeys.length;j++){var dd=data[allKeys[j]];if(dd.category)catSet[dd.category]=1;if(dd.product)prodSet[dd.product]=1;if(dd.sku)skuSet[dd.sku]=1;}
+  var catEl=document.getElementById('skuFilterCat');
+  var prodEl=document.getElementById('skuFilterProd');
+  var skuEl=document.getElementById('skuFilterSKU');
+  if(catEl&&catEl.options.length<=1){var cs=Object.keys(catSet).sort();for(var ci2=0;ci2<cs.length;ci2++){var o=document.createElement('option');o.value=cs[ci2];o.textContent=cs[ci2];catEl.appendChild(o);}}
+  if(prodEl&&prodEl.options.length<=1){var ps=Object.keys(prodSet).sort();for(var pi2=0;pi2<ps.length;pi2++){var o=document.createElement('option');o.value=ps[pi2];o.textContent=ps[pi2];prodEl.appendChild(o);}}
+  if(skuEl&&skuEl.options.length<=1){var ss=Object.keys(skuSet).sort();for(var si2=0;si2<ss.length;si2++){var o=document.createElement('option');o.value=ss[si2];o.textContent=ss[si2];skuEl.appendChild(o);}}
   var keys=[];
   for(var i=0;i<allKeys.length;i++){
     var d=data[allKeys[i]];
+    if(filterCat&&(d.category||'')!==filterCat)continue;
+    if(filterProd&&(d.product||'')!==filterProd)continue;
+    if(filterSKU&&(d.sku||'')!==filterSKU)continue;
     var txt=((d.platform||'')+' '+(d.company||'')+' '+(d.category||'')+' '+(d.product||'')+' '+(d.sku||'')+' '+allKeys[i]).toLowerCase();
     if(!searchQ||txt.indexOf(searchQ)>-1)keys.push(allKeys[i]);
   }
   keys.sort(function(a,b){return (data[b].revenue||0)-(data[a].revenue||0);});
-  var cntEl=document.getElementById('cntSKU');
-  if(cntEl)cntEl.textContent=' ('+keys.length+' of '+allKeys.length+')';
   if(!keys.length)return '<div style="color:#888;padding:10px;font-size:12px">No data</div>';
   var h='<div class="tbox" style="margin-bottom:8px"><div class="twrap"><table id="'+tableId+'" style="width:100%"><thead><tr>';
   var cols=['PLATFORM','COMPANY','CATEGORY','PRODUCT','SKU','REVENUE','COP','RETURNS','PROFIT','REV PROFIT %','COP PROFIT %','/UNIT PROFIT','UNITS'];
@@ -824,8 +852,8 @@ function _renderSKUOverview(data,tableId){
     h+='<tr>';
     h+='<td data-v="'+(d.platform||'')+'" style="text-align:left;border-left:4px solid '+color+';font-weight:600;color:#4fc3f7">'+(d.platform||'-')+'</td>';
     h+='<td data-v="'+(d.company||'')+'" style="text-align:left;font-weight:600;color:#fff">'+(d.company||'-')+'</td>';
-    h+='<td data-v="'+(d.category||'')+'" style="text-align:left;font-weight:600;color:#ff6e00">'+(d.category||'-')+'</td>';
-    h+='<td data-v="'+(d.product||'')+'" style="text-align:left;font-weight:600;color:#bf00ff">'+(d.product||'-')+'</td>';
+    h+='<td data-v="'+(d.category||'')+'" style="text-align:left;font-weight:600;color:#fff">'+(d.category||'-')+'</td>';
+    h+='<td data-v="'+(d.product||'')+'" style="text-align:left;font-weight:600;color:#fff">'+(d.product||'-')+'</td>';
     h+='<td data-v="'+(d.sku||'')+'" style="text-align:left;font-weight:700;color:#fff;white-space:normal;word-break:break-word">'+(d.sku||k)+'</td>';
     h+='<td data-v="'+rev+'">'+_vc(rev,revCount,'#39ff14')+'</td>';
     h+='<td data-v="'+cop+'">'+_vc(cop,revCount,'#ff6e00','-')+'</td>';
