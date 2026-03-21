@@ -864,23 +864,27 @@ function doGet(e) {
     var hasMonthFilter = Object.keys(filterMonths).length > 0;
     var filterYear = (e && e.parameter && e.parameter.year) ? String(e.parameter.year).trim() : '';
 
-    // Fetch columns via Sheets API (split into 2 batches to avoid 413 response-too-large)
-    // Batch 1: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT
-    var batch1Ranges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L'];
+    // Fetch columns via Sheets API (split into 3 batches to avoid 413 response-too-large)
+    // Batch 1: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY (6 cols)
+    var b1 = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F'];
     var r1 = [];
-    for (var i = 0; i < batch1Ranges.length; i++) r1.push("'" + tab + "'!" + batch1Ranges[i]);
+    for (var i = 0; i < b1.length; i++) r1.push("'" + tab + "'!" + b1[i]);
     var res1 = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: r1, valueRenderOption: 'UNFORMATTED_VALUE'});
-    var vr1 = res1.valueRanges;
 
-    // Batch 2: T(col20), U(col21), O=Category, P=SubCategory, Q=Product
-    var batch2Ranges = ['T2:T','U2:U','O2:O','P2:P','Q2:Q'];
+    // Batch 2: G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT (6 cols)
+    var b2 = ['G2:G','H2:H','I2:I','J2:J','K2:K','L2:L'];
     var r2 = [];
-    for (var i2 = 0; i2 < batch2Ranges.length; i2++) r2.push("'" + tab + "'!" + batch2Ranges[i2]);
+    for (var i2 = 0; i2 < b2.length; i2++) r2.push("'" + tab + "'!" + b2[i2]);
     var res2 = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: r2, valueRenderOption: 'UNFORMATTED_VALUE'});
-    var vr2 = res2.valueRanges;
+
+    // Batch 3: T(col20), U(col21), O=Category, P=SubCategory, Q=Product (5 cols)
+    var b3 = ['T2:T','U2:U','O2:O','P2:P','Q2:Q'];
+    var r3 = [];
+    for (var i3 = 0; i3 < b3.length; i3++) r3.push("'" + tab + "'!" + b3[i3]);
+    var res3 = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: r3, valueRenderOption: 'UNFORMATTED_VALUE'});
 
     // Merge into single vr array (same order as original 17 columns)
-    var vr = vr1.concat(vr2);
+    var vr = res1.valueRanges.concat(res2.valueRanges).concat(res3.valueRanges);
     var maxRows = 0;
     for (var v = 0; v < vr.length; v++) { var len = (vr[v].values || []).length; if (len > maxRows) maxRows = len; }
 
@@ -1177,19 +1181,6 @@ function doGet(e) {
     for (var ai = 0; ai < amK.length; ai++) {
       if (sortedMonths.indexOf(amK[ai]) === -1) sortedMonths.push(amK[ai]);
     }
-
-    // Trim large objects to avoid 413 output-too-large (ContentService limit)
-    var _trimObj = function(obj, limit) {
-      var keys = Object.keys(obj);
-      if (keys.length <= limit) return obj;
-      keys.sort(function(a,b) { return Math.abs(obj[b].revenue||0) - Math.abs(obj[a].revenue||0); });
-      var trimmed = {};
-      for (var ti = 0; ti < limit && ti < keys.length; ti++) trimmed[keys[ti]] = obj[keys[ti]];
-      return trimmed;
-    };
-    bySKU = _trimObj(bySKU, 200);
-    byProduct = _trimObj(byProduct, 100);
-    bySubCategory = _trimObj(bySubCategory, 50);
 
     var result = {
       summary: summary,
