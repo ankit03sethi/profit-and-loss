@@ -1178,6 +1178,19 @@ function doGet(e) {
       if (sortedMonths.indexOf(amK[ai]) === -1) sortedMonths.push(amK[ai]);
     }
 
+    // Trim large objects to avoid 413 output-too-large (ContentService limit)
+    var _trimObj = function(obj, limit) {
+      var keys = Object.keys(obj);
+      if (keys.length <= limit) return obj;
+      keys.sort(function(a,b) { return Math.abs(obj[b].revenue||0) - Math.abs(obj[a].revenue||0); });
+      var trimmed = {};
+      for (var ti = 0; ti < limit && ti < keys.length; ti++) trimmed[keys[ti]] = obj[keys[ti]];
+      return trimmed;
+    };
+    bySKU = _trimObj(bySKU, 200);
+    byProduct = _trimObj(byProduct, 100);
+    bySubCategory = _trimObj(bySubCategory, 50);
+
     var result = {
       summary: summary,
       byPlatform: byPlatform,
