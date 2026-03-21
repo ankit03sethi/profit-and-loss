@@ -103,6 +103,17 @@ var PLATFORMS = {
     id: '1ov2Z63nO6EpvmAQmlqA-wWwCdqebj20pBjWr2qP2P8c',
     tab: 'Transfer',
     cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','G2:G','M2:M','R2:R','S2:S','N2:N']
+  },
+  myntraPayments: {
+    id: '1kFlxfE7qgEFQovKH37qO34bxCJ8gbS6IQxuq1mtUrCM',
+    tab: 'Payments',
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','AI2:AI','BF2:BF','A2:A','Z2:Z']
+  },
+  myntraDeductions: {
+    id: '1kFlxfE7qgEFQovKH37qO34bxCJ8gbS6IQxuq1mtUrCM',
+    tab: 'Deductions',
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','L2:L','A2:A','A2:A','I2:I'],
+    extraCol: {src: 'J2:J', destCol: 15}
   }
 };
 
@@ -132,6 +143,8 @@ function onOpen() {
     .addItem('Sync Referral Payments', 'sReferralPayments')
     .addItem('Sync Compensation & Recovery', 'sCompensationRecovery')
     .addItem('Sync Transfer 2', 'sTransfer2')
+    .addItem('Sync Myntra Payments', 'sMyntraPayments')
+    .addItem('Sync Myntra Deductions', 'sMyntraDeductions')
     .addSeparator()
     .addItem('Run VLOOKUP (SKU)', 'vlookupSKU')
     .addItem('Compute Formulas (S,T,U,V)', 'computeFormulas')
@@ -166,6 +179,8 @@ function sAdsCost() { syncOne('adsCost'); }
 function sReferralPayments() { syncOne('referralPayments'); }
 function sCompensationRecovery() { syncOne('compensationRecovery'); }
 function sTransfer2() { syncOne('transfer2'); }
+function sMyntraPayments() { syncOne('myntraPayments'); }
+function sMyntraDeductions() { syncOne('myntraDeductions'); }
 
 // ===================== VLOOKUP SKU =====================
 // Reads Master SKU FILE: key=AA, returns AC,AD,AG,AJ,AM,AQ
@@ -444,6 +459,24 @@ function syncOne(name) {
   if (newRows.length > 0) {
     var lr = Math.max(ms.getLastRow(), 1);
     ms.getRange(lr + 1, 1, newRows.length, 12).setValues(newRows);
+
+    // Handle extraCol (e.g., myntraDeductions writes src column to destCol)
+    if (p.extraCol) {
+      try {
+        var extraRaw = fastRead(p.id, p.tab, [p.extraCol.src]);
+        var extraOut = [];
+        var rawIdx = 0;
+        for (var ei = 0; ei < raw.length; ei++) {
+          if (String(raw[ei][0]).trim() === '') continue;
+          extraOut.push([ei < extraRaw.length ? extraRaw[ei][0] : '']);
+        }
+        if (extraOut.length > 0) {
+          ms.getRange(lr + 1, p.extraCol.destCol, extraOut.length, 1).setValues(extraOut);
+        }
+      } catch(ex) {
+        Logger.log('extraCol error for ' + name + ': ' + ex.message);
+      }
+    }
   }
 
   SpreadsheetApp.getUi().alert(name + ': ' + raw.length + ' pulled, ' + newRows.length + ' added');
@@ -786,40 +819,56 @@ function doGet(e) {
     var hasMonthFilter = Object.keys(filterMonths).length > 0;
     var filterYear = (e && e.parameter && e.parameter.year) ? String(e.parameter.year).trim() : '';
 
-    // Fetch columns via Sheets API: A=TOTAL, B=S.NO, C=YEAR, D=MONTH, E=PLATFORM, F=COMPANY, G=TYPE, H=TYPE2, I=ORDER_ID, J=SKU, K=QTY, L=AMOUNT, T(col20), U(col21), O=Category, P=SubCategory, Q=Product
-    var colRanges = ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','I2:I','J2:J','K2:K','L2:L','T2:T','U2:U','O2:O','P2:P','Q2:Q'];
-    var ranges = [];
-    for (var i = 0; i < colRanges.length; i++) ranges.push("'" + tab + "'!" + colRanges[i]);
-    var res = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: ranges, valueRenderOption: 'UNFORMATTED_VALUE'});
-    var vr = res.valueRanges;
+    // SPLIT into 2 smaller batchGet calls to avoid 413 on Sheets API (117k rows × 17 cols = too large)
+    // Batch 1: A,C,D,E,F,G,H,K,L (core columns - 9 cols)
+    var batch1Ranges = ['A2:A','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','K2:K','L2:L'];
+    var r1 = [];
+    for (var i = 0; i < batch1Ranges.length; i++) r1.push("'" + tab + "'!" + batch1Ranges[i]);
+    var res1 = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: r1, valueRenderOption: 'UNFORMATTED_VALUE'});
+    var vr1 = res1.valueRanges;
+
+    // Batch 2: T,U,O (P&L cards + category - 3 cols)
+    var batch2Ranges = ['T2:T','U2:U','O2:O'];
+    var r2 = [];
+    for (var i = 0; i < batch2Ranges.length; i++) r2.push("'" + tab + "'!" + batch2Ranges[i]);
+    var res2 = Sheets.Spreadsheets.Values.batchGet(ssId, {ranges: r2, valueRenderOption: 'UNFORMATTED_VALUE'});
+    var vr2 = res2.valueRanges;
+
+    // Merge into unified cols array
+    var allVr = [];
+    for (var v = 0; v < vr1.length; v++) allVr.push(vr1[v]);
+    for (var v = 0; v < vr2.length; v++) allVr.push(vr2[v]);
+
     var maxRows = 0;
-    for (var v = 0; v < vr.length; v++) { var len = (vr[v].values || []).length; if (len > maxRows) maxRows = len; }
+    for (var v = 0; v < allVr.length; v++) { var len = (allVr[v].values || []).length; if (len > maxRows) maxRows = len; }
 
     if (maxRows === 0) {
       return _jsonResp({summary:{},byPlatform:{},byCompany:{},byType:{},byType2:{},byMonth:[],daily:[],plBreakdown:{revenue:0,costs:0,netPL:0},timestamp:new Date().toISOString()});
     }
 
     var cols = [];
-    for (var c = 0; c < vr.length; c++) cols.push(vr[c].values || []);
-    // cols: 0=total, 1=sno, 2=year, 3=month, 4=platform, 5=company, 6=type, 7=type2, 8=orderId, 9=sku, 10=qty, 11=amount, 12=T(col20), 13=U(col21), 14=category(O), 15=subCategory(P), 16=product(Q)
+    for (var c = 0; c < allVr.length; c++) cols.push(allVr[c].values || []);
+    // cols: 0=A(total), 1=C(year), 2=D(month), 3=E(platform), 4=F(company), 5=G(type), 6=H(type2), 7=K(qty), 8=L(amount), 9=T(col20), 10=U(col21), 11=O(category)
 
     var summary = {totalEntries:0, totalQty:0, totalAmount:0};
     var byPlatform = {}, byCompany = {}, byType = {}, byType2 = {}, byMonthMap = {}, dailyMap = {};
-    var typeDetail = {};  // per-type drill-down: typeDetail[type] = {total, byPlatform:{}, byCompany:{}}
+    var typeDetail = {};
     var plRevenue = 0, plCosts = 0, plCOP = 0, plCardRevenue = 0, plReturns = 0;
     var plRevenueByPlatform = {}, plRevenueByCompany = {};
     var plCOPByPlatform = {}, plCOPByCompany = {};
     var plReturnsByPlatform = {}, plReturnsByCompany = {};
-    var byCategory = {}, bySubCategory = {}, byProduct = {}, bySKU = {};
-    var seenEntries = {};
+    var byCategory = {};
+
+    // NEW column indices after split: 0=A(total), 1=C(year), 2=D(month), 3=E(platform), 4=F(company), 5=G(type), 6=H(type2), 7=K(qty), 8=L(amount), 9=T, 10=U, 11=O(category)
+    var CI = {total:0, year:1, month:2, platform:3, company:4, type:5, type2:6, qty:7, amount:8, colT:9, colU:10, category:11};
 
     // Collect ALL unique months/years (before filtering) for dropdown population
     var allMonthNames = {}, allYears = {}, monthsByYear = {};
     for (var r0 = 0; r0 < maxRows; r0++) {
-      var _t = r0 < cols[0].length && cols[0][r0].length > 0 ? cols[0][r0][0] : '';
+      var _t = r0 < cols[CI.total].length && cols[CI.total][r0].length > 0 ? cols[CI.total][r0][0] : '';
       if (!_t || String(_t).trim() === '') continue;
-      var _y = String(r0 < cols[2].length && cols[2][r0].length > 0 ? cols[2][r0][0] : '').trim();
-      var _m = String(r0 < cols[3].length && cols[3][r0].length > 0 ? cols[3][r0][0] : '').trim();
+      var _y = String(r0 < cols[CI.year].length && cols[CI.year][r0].length > 0 ? cols[CI.year][r0][0] : '').trim();
+      var _m = String(r0 < cols[CI.month].length && cols[CI.month][r0].length > 0 ? cols[CI.month][r0][0] : '').trim();
       if (_m) allMonthNames[_m] = true;
       if (_y) allYears[_y] = true;
       if (_y && _m) {
@@ -845,23 +894,20 @@ function doGet(e) {
     }
 
     for (var r = 0; r < maxRows; r++) {
-      var total = r < cols[0].length && cols[0][r].length > 0 ? cols[0][r][0] : '';
+      var total = r < cols[CI.total].length && cols[CI.total][r].length > 0 ? cols[CI.total][r][0] : '';
       if (!total || String(total).trim() === '') continue;
 
-      var year = String(r < cols[2].length && cols[2][r].length > 0 ? cols[2][r][0] : '').trim();
-      var month = String(r < cols[3].length && cols[3][r].length > 0 ? cols[3][r][0] : '').trim();
-      var platform = String(r < cols[4].length && cols[4][r].length > 0 ? cols[4][r][0] : '').trim() || 'Unknown';
-      var company = String(r < cols[5].length && cols[5][r].length > 0 ? cols[5][r][0] : '').trim() || 'Unknown';
-      var type = String(r < cols[6].length && cols[6][r].length > 0 ? cols[6][r][0] : '').trim() || 'Unknown';
-      var type2 = String(r < cols[7].length && cols[7][r].length > 0 ? cols[7][r][0] : '').trim() || 'Unknown';
-      var qty = _toNum(r < cols[10].length && cols[10][r].length > 0 ? cols[10][r][0] : 0);
-      var amount = _toNum(r < cols[11].length && cols[11][r].length > 0 ? cols[11][r][0] : 0);
-      var colT = _toNum(r < cols[12].length && cols[12][r].length > 0 ? cols[12][r][0] : 0);
-      var colU = _toNum(r < cols[13].length && cols[13][r].length > 0 ? cols[13][r][0] : 0);
-      var category = String(r < cols[14].length && cols[14][r].length > 0 ? cols[14][r][0] : '').trim() || 'Unknown';
-      var subCategory = String(r < cols[15].length && cols[15][r].length > 0 ? cols[15][r][0] : '').trim() || 'Unknown';
-      var product = String(r < cols[16].length && cols[16][r].length > 0 ? cols[16][r][0] : '').trim() || 'Unknown';
-      var sku = String(r < cols[9].length && cols[9][r].length > 0 ? cols[9][r][0] : '').trim() || 'Unknown';
+      var year = String(r < cols[CI.year].length && cols[CI.year][r].length > 0 ? cols[CI.year][r][0] : '').trim();
+      var month = String(r < cols[CI.month].length && cols[CI.month][r].length > 0 ? cols[CI.month][r][0] : '').trim();
+      var platform = String(r < cols[CI.platform].length && cols[CI.platform][r].length > 0 ? cols[CI.platform][r][0] : '').trim() || 'Unknown';
+      var company = String(r < cols[CI.company].length && cols[CI.company][r].length > 0 ? cols[CI.company][r][0] : '').trim() || 'Unknown';
+      var type = String(r < cols[CI.type].length && cols[CI.type][r].length > 0 ? cols[CI.type][r][0] : '').trim() || 'Unknown';
+      var type2 = String(r < cols[CI.type2].length && cols[CI.type2][r].length > 0 ? cols[CI.type2][r][0] : '').trim() || 'Unknown';
+      var qty = _toNum(r < cols[CI.qty].length && cols[CI.qty][r].length > 0 ? cols[CI.qty][r][0] : 0);
+      var amount = _toNum(r < cols[CI.amount].length && cols[CI.amount][r].length > 0 ? cols[CI.amount][r][0] : 0);
+      var colT = _toNum(r < cols[CI.colT].length && cols[CI.colT][r].length > 0 ? cols[CI.colT][r][0] : 0);
+      var colU = _toNum(r < cols[CI.colU].length && cols[CI.colU][r].length > 0 ? cols[CI.colU][r][0] : 0);
+      var category = String(r < cols[CI.category].length && cols[CI.category][r].length > 0 ? cols[CI.category][r][0] : '').trim() || 'Unknown';
 
       // Convert Transfer values to positive
       var typeUpper = type.toUpperCase();
@@ -934,40 +980,17 @@ function doGet(e) {
         plReturnsByCompany[company].entries++;
       }
 
-      // byCategory, bySubCategory, byProduct, bySKU: Revenue/COP/Returns + counts
+      // byCategory only (bySubCategory, byProduct, bySKU removed to reduce API read size)
       if (typeUpper === 'ORDER') {
         if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
         byCategory[category].revenue += colU;
         byCategory[category].cop += colT;
         byCategory[category].revCount++;
-        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
-        bySubCategory[subCategory].revenue += colU;
-        bySubCategory[subCategory].cop += colT;
-        bySubCategory[subCategory].revCount++;
-        if (!byProduct[product]) byProduct[product] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
-        byProduct[product].revenue += colU;
-        byProduct[product].cop += colT;
-        byProduct[product].revCount++;
-        var skuKey = platform + ' | ' + company + ' | ' + sku;
-        if (!bySKU[skuKey]) bySKU[skuKey] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0, platform:platform, company:company, sku:sku, category:category, product:product};
-        bySKU[skuKey].revenue += colU;
-        bySKU[skuKey].cop += colT;
-        bySKU[skuKey].revCount++;
       }
       if (typeUpper === 'RETURN') {
         if (!byCategory[category]) byCategory[category] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
         byCategory[category].returns += colU;
         byCategory[category].retCount++;
-        if (!bySubCategory[subCategory]) bySubCategory[subCategory] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
-        bySubCategory[subCategory].returns += colU;
-        bySubCategory[subCategory].retCount++;
-        if (!byProduct[product]) byProduct[product] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0};
-        byProduct[product].returns += colU;
-        byProduct[product].retCount++;
-        var skuKey2 = platform + ' | ' + company + ' | ' + sku;
-        if (!bySKU[skuKey2]) bySKU[skuKey2] = {revenue:0, cop:0, returns:0, revCount:0, retCount:0, platform:platform, company:company, sku:sku, category:category, product:product};
-        bySKU[skuKey2].returns += colU;
-        bySKU[skuKey2].retCount++;
       }
 
       // byPlatform
@@ -1025,11 +1048,8 @@ function doGet(e) {
     for (var k in byPlatform) { byPlatform[k].amount = Math.round(byPlatform[k].amount * 100) / 100; byPlatform[k].qty = Math.round(byPlatform[k].qty * 100) / 100; }
     for (var k in byCompany) { byCompany[k].amount = Math.round(byCompany[k].amount * 100) / 100; byCompany[k].qty = Math.round(byCompany[k].qty * 100) / 100; }
     for (var k in byType) { byType[k].amount = Math.round(byType[k].amount * 100) / 100; byType[k].qty = Math.round(byType[k].qty * 100) / 100; }
-    // Round byCategory/bySubCategory
+    // Round byCategory
     for (var k in byCategory) { byCategory[k].revenue = Math.round(byCategory[k].revenue * 100) / 100; byCategory[k].cop = Math.round(byCategory[k].cop * 100) / 100; byCategory[k].returns = Math.round(byCategory[k].returns * 100) / 100; }
-    for (var k in bySubCategory) { bySubCategory[k].revenue = Math.round(bySubCategory[k].revenue * 100) / 100; bySubCategory[k].cop = Math.round(bySubCategory[k].cop * 100) / 100; bySubCategory[k].returns = Math.round(bySubCategory[k].returns * 100) / 100; }
-    for (var k in byProduct) { byProduct[k].revenue = Math.round(byProduct[k].revenue * 100) / 100; byProduct[k].cop = Math.round(byProduct[k].cop * 100) / 100; byProduct[k].returns = Math.round(byProduct[k].returns * 100) / 100; }
-    for (var k in bySKU) { bySKU[k].revenue = Math.round(bySKU[k].revenue * 100) / 100; bySKU[k].cop = Math.round(bySKU[k].cop * 100) / 100; bySKU[k].returns = Math.round(bySKU[k].returns * 100) / 100; }
     // Round typeDetail
     for (var td in typeDetail) {
       typeDetail[td].total = Math.round(typeDetail[td].total * 100) / 100;
@@ -1089,6 +1109,24 @@ function doGet(e) {
       if (sortedMonths.indexOf(amK[ai]) === -1) sortedMonths.push(amK[ai]);
     }
 
+    // === AGGRESSIVE RESPONSE SIZE FIX: 413 error with 117k rows ===
+    // Completely REMOVE bySKU, byProduct, bySubCategory from response (too large)
+    // Flatten typeDetail to just totals (remove byPlatform/byCompany nesting)
+
+    var flatTypeDetail = {};
+    for (var td in typeDetail) {
+      flatTypeDetail[td] = { total: typeDetail[td].total, entries: typeDetail[td].entries };
+    }
+
+    // Limit byCategory to top 30 (should be small but just in case)
+    var catKeys = Object.keys(byCategory);
+    var limitedCat = {};
+    if (catKeys.length <= 30) { limitedCat = byCategory; }
+    else {
+      catKeys.sort(function(a, b) { return Math.abs(byCategory[b].revenue) - Math.abs(byCategory[a].revenue); });
+      for (var ci = 0; ci < 30; ci++) { limitedCat[catKeys[ci]] = byCategory[catKeys[ci]]; }
+    }
+
     var result = {
       summary: summary,
       byPlatform: byPlatform,
@@ -1098,11 +1136,14 @@ function doGet(e) {
       byMonth: byMonth,
       plBreakdown: plBreakdown,
       plCards: plCards,
-      typeDetail: typeDetail,
-      byCategory: byCategory,
-      bySubCategory: bySubCategory,
-      byProduct: byProduct,
-      bySKU: bySKU,
+      typeDetail: flatTypeDetail,
+      byCategory: limitedCat,
+      bySubCategory: {},
+      byProduct: {},
+      bySKU: {},
+      totalSKUs: 0,
+      totalProducts: 0,
+      totalSubCategories: catKeys.length,
       platforms: Object.keys(byPlatform).sort(),
       companies: Object.keys(byCompany).sort(),
       types: Object.keys(byType).sort(),
