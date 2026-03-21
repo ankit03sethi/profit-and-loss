@@ -1109,22 +1109,15 @@ function doGet(e) {
       if (sortedMonths.indexOf(amK[ai]) === -1) sortedMonths.push(amK[ai]);
     }
 
-    // === AGGRESSIVE RESPONSE SIZE FIX: 413 error with 117k rows ===
-    // Completely REMOVE bySKU, byProduct, bySubCategory from response (too large)
-    // Flatten typeDetail to just totals (remove byPlatform/byCompany nesting)
+    // === 413 FIX: keep split batch reads, restore full typeDetail for drill-downs ===
+    // Only remove bySKU/byProduct/bySubCategory (huge with 117k rows)
+    // typeDetail is small so keep full structure for frontend drill-downs
 
-    var flatTypeDetail = {};
+    // Slim typeDetail: remove deepest nesting (byCompany inside byPlatform)
     for (var td in typeDetail) {
-      flatTypeDetail[td] = { total: typeDetail[td].total, entries: typeDetail[td].entries };
-    }
-
-    // Limit byCategory to top 30 (should be small but just in case)
-    var catKeys = Object.keys(byCategory);
-    var limitedCat = {};
-    if (catKeys.length <= 30) { limitedCat = byCategory; }
-    else {
-      catKeys.sort(function(a, b) { return Math.abs(byCategory[b].revenue) - Math.abs(byCategory[a].revenue); });
-      for (var ci = 0; ci < 30; ci++) { limitedCat[catKeys[ci]] = byCategory[catKeys[ci]]; }
+      for (var tdp in typeDetail[td].byPlatform) {
+        delete typeDetail[td].byPlatform[tdp].byCompany;
+      }
     }
 
     var result = {
@@ -1136,14 +1129,11 @@ function doGet(e) {
       byMonth: byMonth,
       plBreakdown: plBreakdown,
       plCards: plCards,
-      typeDetail: flatTypeDetail,
-      byCategory: limitedCat,
+      typeDetail: typeDetail,
+      byCategory: byCategory,
       bySubCategory: {},
       byProduct: {},
       bySKU: {},
-      totalSKUs: 0,
-      totalProducts: 0,
-      totalSubCategories: catKeys.length,
       platforms: Object.keys(byPlatform).sort(),
       companies: Object.keys(byCompany).sort(),
       types: Object.keys(byType).sort(),
