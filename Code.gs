@@ -116,6 +116,12 @@ var PLATFORMS = {
     cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','H2:H','L2:L','A2:A','A2:A','I2:I'],
     blankCols: [9, 10],
     extraCol: {src: 'J2:J', destCol: 15}
+  },
+  finalTransfer: {
+    id: '1PWavO2jatx_48djKk491ahEQM-hgLrVzexNqsNe9ajA',
+    tab: 'Final Transfer',
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','H2:H','A2:A','A2:A','A2:A','A2:A','G2:G'],
+    blankCols: [7, 8, 9, 10]
   }
 };
 
@@ -147,6 +153,7 @@ function onOpen() {
     .addItem('Sync Transfer 2', 'sTransfer2')
     .addItem('Sync Myntra Payments', 'sMyntraPayments')
     .addItem('Sync Myntra Deductions', 'sMyntraDeductions')
+    .addItem('Sync Final Transfer', 'sFinalTransfer')
     .addSeparator()
     .addItem('Run VLOOKUP (SKU)', 'vlookupSKU')
     .addItem('Compute Formulas (S,T,U,V)', 'computeFormulas')
@@ -183,6 +190,7 @@ function sCompensationRecovery() { syncOne('compensationRecovery'); }
 function sTransfer2() { syncOne('transfer2'); }
 function sMyntraPayments() { syncOne('myntraPayments'); }
 function sMyntraDeductions() { syncOne('myntraDeductions'); }
+function sFinalTransfer() { syncOne('finalTransfer'); }
 
 // ===================== VLOOKUP SKU =====================
 // Reads Master SKU FILE: key=AA, returns AC,AD,AG,AJ,AM,AQ
