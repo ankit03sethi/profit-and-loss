@@ -488,7 +488,7 @@ function renderPLCards(){
 
   var h='';
   // 1. NET PROFIT card FIRST (bigger, green)
-  h+='<div class="cd g" style="cursor:pointer">';
+  h+='<div class="cd g" style="cursor:pointer" onclick="openNetProfitDrill()">';
   h+='<div class="lb" style="color:#39ff14;font-weight:700">NET PROFIT</div>';
   h+='<div class="vl" style="color:#39ff14;font-size:28px">'+fmtCur(netProfit)+'</div>';
   h+='</div>';
@@ -520,7 +520,7 @@ function renderPLCards(){
     var eTotal2=eData2?eData2.total:0;
     reqTransfer-=Math.abs(eTotal2);
   }
-  h+='<div class="cd" style="cursor:pointer;border-left-color:#ffd700">';
+  h+='<div class="cd" style="cursor:pointer;border-left-color:#ffd700" onclick="openReqTransferDrill()">';
   h+='<div class="lb">REQUIRED TRANSFERRED</div>';
   h+='<div class="vl" style="color:#ffd700">'+fmtCur(reqTransfer)+'</div>';
   h+='</div>';
@@ -609,9 +609,12 @@ function renderTypeDrillPlatforms(){
 
 function typeDrillToPlatform(plat){
   PL_DM.level=2;PL_DM.platform=plat;
-  document.getElementById('modalTitle').textContent=PL_DM.typeName+' - '+plat+' - Company Breakdown';
+  var prefix='';var breadPrefix='';
+  if(PL_DM.type==='netProfit'){prefix='NET PROFIT > ';breadPrefix='<span>Net Profit</span> &rarr; ';}
+  else if(PL_DM.type==='reqTransfer'){prefix='REQ. TRANSFERRED > ';breadPrefix='<span>Req. Transferred</span> &rarr; ';}
+  document.getElementById('modalTitle').textContent=prefix+PL_DM.typeName+' > '+plat+' - Company Breakdown';
   document.getElementById('modalNav').style.display='flex';
-  document.getElementById('modalBread').innerHTML='<span>'+PL_DM.typeName+'</span> &rarr; <span>'+plat+'</span>';
+  document.getElementById('modalBread').innerHTML=breadPrefix+'<span>'+PL_DM.typeName+'</span> &rarr; <span>'+plat+'</span>';
   renderTypeDrillCompanies();
 }
 
@@ -710,10 +713,11 @@ function plDrillToPlatform(plat){
 
 function renderPLDrillCompanies(){
   var pc=DATA.plCards||{};
-  var allByComp=PL_DM.type==='revenue'?pc.revenueByCompany:PL_DM.type==='cop'?pc.copByCompany:pc.returnsByCompany;
-  var byPlat=PL_DM.type==='revenue'?pc.revenueByPlatform:PL_DM.type==='cop'?pc.copByPlatform:pc.returnsByPlatform;
-  var clr=plDrillColor(PL_DM.type);
-  var lbl=PL_DM.type==='revenue'?'ORDERS':PL_DM.type==='cop'?'COP':'RETURNS';
+  var _pt=PL_DM._plType||PL_DM.type;
+  var allByComp=_pt==='revenue'?pc.revenueByCompany:_pt==='cop'?pc.copByCompany:pc.returnsByCompany;
+  var byPlat=_pt==='revenue'?pc.revenueByPlatform:_pt==='cop'?pc.copByPlatform:pc.returnsByPlatform;
+  var clr=plDrillColor(_pt);
+  var lbl=_pt==='revenue'?'ORDERS':_pt==='cop'?'COP':'RETURNS';
   // Filter companies to only those under selected platform
   var platCompanies=(byPlat&&byPlat[PL_DM.platform]&&byPlat[PL_DM.platform].companies)?byPlat[PL_DM.platform].companies:{};
   var byComp={};
@@ -751,6 +755,282 @@ function renderPLDrillCompanies(){
   h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7"><td style="text-align:left;color:#4fc3f7">TOTAL</td><td style="color:#fff">'+fmt(function(){var s=0;for(var i=0;i<keys.length;i++)s+=byComp[keys[i]].entries;return s;}())+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</td><td>100%</td></tr>';
   h+='</tbody></table></div></div>';
   document.getElementById('modalBody').innerHTML=h;
+}
+
+// ===== NET PROFIT DRILL-DOWN (Component Breakdown) =====
+function openNetProfitDrill(){
+  PL_DM={type:'netProfit',level:0,platform:'',company:'',typeName:'',subType:''};
+  document.getElementById('modalTitle').textContent='NET PROFIT - Component Breakdown';
+  document.getElementById('modalNav').style.display='none';
+  document.getElementById('modal').classList.add('show');
+  document.body.style.overflow='hidden';
+  modalStack=[];
+  renderNetProfitComponents();
+}
+
+function renderNetProfitComponents(){
+  var pc=DATA.plCards||{};
+  var td=DATA.typeDetail||{};
+  var revenue=pc.revenue||0;
+  var cop=pc.cop||0;
+  var returns=pc.returns||0;
+  var allTypes=Object.keys(td).sort();
+  var PROFIT_ADD_LOCAL={'Adjustment':1,'Reimbursements':1};
+  var netProfit=revenue - Math.abs(cop) - Math.abs(returns);
+  var components=[];
+  components.push({name:'Orders (Revenue)',value:revenue,sign:'+',color:'#39ff14',drillType:'pl',drillArg:'revenue'});
+  components.push({name:'COP (Cost of Product)',value:-Math.abs(cop),sign:'-',color:'#ff6e00',drillType:'pl',drillArg:'cop'});
+  components.push({name:'Returns',value:-Math.abs(returns),sign:'-',color:'#ff003c',drillType:'pl',drillArg:'returns'});
+  for(var ni=0;ni<TYPE_CARD_ORDER.length;ni++){
+    var nName=TYPE_CARD_ORDER[ni];
+    if(nName.toUpperCase()==='TRANSFER')continue;
+    var nData=td[nName];
+    var nTotal=nData?nData.total:0;
+    var isAdd=PROFIT_ADD_LOCAL[nName]?true:false;
+    var val=isAdd?Math.abs(nTotal):-Math.abs(nTotal);
+    if(isAdd){netProfit+=Math.abs(nTotal);}else{netProfit-=Math.abs(nTotal);}
+    var clr=TYPE_CARD_COLORS[nName]||'#4fc3f7';
+    components.push({name:nName,value:val,sign:isAdd?'+':'-',color:clr,drillType:'type',drillArg:nName});
+  }
+  for(var ei=0;ei<allTypes.length;ei++){
+    var eName=allTypes[ei];
+    if(TYPE_CARD_EXCLUDE[eName])continue;
+    if(TYPE_CARD_ORDER.indexOf(eName)!==-1)continue;
+    if(eName.toUpperCase()==='TRANSFER')continue;
+    var eData=td[eName];
+    var eTotal=eData?eData.total:0;
+    netProfit-=Math.abs(eTotal);
+    var eClr=TYPE_CARD_COLORS[eName]||'#4fc3f7';
+    components.push({name:eName,value:-Math.abs(eTotal),sign:'-',color:eClr,drillType:'type',drillArg:eName});
+  }
+  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Net Profit: <span style="color:#39ff14;font-weight:700">'+fmtCur(netProfit)+'</span> | '+components.length+' components</div>';
+  h+='<div class="drill-grid">';
+  for(var i=0;i<components.length;i++){
+    var c=components[i];
+    var color=PL_COLORS[i%PL_COLORS.length];
+    var pct=netProfit!==0?((c.value/Math.abs(netProfit))*100):0;
+    h+='<div class="drill-item" style="border-left-color:'+color+';cursor:pointer" onclick="netProfitDrillInto(\''+c.drillType+'\',\''+c.drillArg.replace(/'/g,"\\'")+'\')">';
+    h+='<div class="di-name">'+c.name+'</div>';
+    h+='<div class="di-count" style="color:'+(c.sign==='+'?'#39ff14':'#ff6e00')+'">'+c.sign+'</div>';
+    h+='<div class="di-amt" style="color:'+c.color+';font-size:16px">'+fmtCur(c.value)+'</div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+' of net</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<div class="tbox"><h3>NET PROFIT BREAKDOWN <span>Click any row for platform drill-down</span></h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">COMPONENT</th><th>SIGN</th><th>VALUE</th><th>% OF NET PROFIT</th></tr></thead><tbody>';
+  for(var i=0;i<components.length;i++){
+    var c=components[i];var color=PL_COLORS[i%PL_COLORS.length];
+    var pct=netProfit!==0?((c.value/Math.abs(netProfit))*100):0;
+    h+='<tr style="cursor:pointer" onclick="netProfitDrillInto(\''+c.drillType+'\',\''+c.drillArg.replace(/'/g,"\\'")+'\')">';
+    h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+c.name+'</td>';
+    h+='<td style="color:'+(c.sign==='+'?'#39ff14':'#ff6e00')+';font-weight:700">'+c.sign+'</td>';
+    h+='<td style="color:'+c.color+';font-weight:700">'+fmtCur(c.value)+'</td>';
+    h+='<td>'+fmtPct(pct)+'</td></tr>';
+  }
+  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #39ff14"><td style="text-align:left;color:#39ff14">NET PROFIT</td><td style="color:#39ff14">=</td><td style="color:#39ff14;font-weight:700">'+fmtCur(netProfit)+'</td><td>100%</td></tr>';
+  h+='</tbody></table></div></div>';
+  document.getElementById('modalBody').innerHTML=h;
+}
+
+function netProfitDrillInto(drillType,drillArg){
+  PL_DM.level=1;PL_DM.subType=drillType;
+  if(drillType==='pl'){
+    PL_DM.type='netProfit';PL_DM.platform='';
+    var label=plDrillLabel(drillArg);
+    document.getElementById('modalTitle').textContent='NET PROFIT > '+label+' - Platform Breakdown';
+    document.getElementById('modalNav').style.display='flex';
+    document.getElementById('modalBread').innerHTML='<span>Net Profit</span> &rarr; <span>'+label+'</span>';
+    PL_DM._plType=drillArg;
+    renderNetProfitPLPlatforms();
+  } else {
+    PL_DM.type='netProfit';PL_DM.typeName=drillArg;PL_DM.platform='';
+    document.getElementById('modalTitle').textContent='NET PROFIT > '+drillArg+' - Platform Breakdown';
+    document.getElementById('modalNav').style.display='flex';
+    document.getElementById('modalBread').innerHTML='<span>Net Profit</span> &rarr; <span>'+drillArg+'</span>';
+    renderTypeDrillPlatforms();
+  }
+}
+
+function renderNetProfitPLPlatforms(){
+  var pc=DATA.plCards||{};
+  var plType=PL_DM._plType;
+  var byPlat=plType==='revenue'?pc.revenueByPlatform:plType==='cop'?pc.copByPlatform:pc.returnsByPlatform;
+  var clr=plDrillColor(plType);
+  var lbl=plType==='revenue'?'ORDERS':plType==='cop'?'COP':'RETURNS';
+  if(!byPlat||!Object.keys(byPlat).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
+  var keys=Object.keys(byPlat).sort(function(a,b){return Math.abs(byPlat[b].value)-Math.abs(byPlat[a].value);});
+  var total=0;for(var i=0;i<keys.length;i++)total+=byPlat[keys[i]].value;
+  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Total: <span style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</span> | '+keys.length+' platforms</div>';
+  h+='<div class="drill-grid">';
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var d=byPlat[k];var color=PL_COLORS[i%PL_COLORS.length];
+    var pct=total!==0?((d.value/total)*100):0;
+    h+='<div class="drill-item" style="border-left-color:'+color+'" onclick="netProfitPLToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
+    h+='<div class="di-name">'+k+'</div>';
+    h+='<div class="di-count">'+fmt(d.entries)+' entries</div>';
+    h+='<div class="di-amt" style="color:'+clr+'">'+fmtCur(d.value)+'</div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+'</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<div class="tbox"><h3>'+lbl+' BY PLATFORM <span>Click for company breakdown</span></h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">PLATFORM</th><th>ENTRIES</th><th>VALUE</th><th>% OF TOTAL</th></tr></thead><tbody>';
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var d=byPlat[k];var pct=total!==0?((d.value/total)*100):0;var color=PL_COLORS[i%PL_COLORS.length];
+    h+='<tr style="cursor:pointer" onclick="netProfitPLToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
+    h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+k+'</td>';
+    h+='<td>'+fmt(d.entries)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(d.value)+'</td><td>'+fmtPct(pct)+'</td></tr>';
+  }
+  var totE=0;for(var i=0;i<keys.length;i++)totE+=byPlat[keys[i]].entries;
+  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7"><td style="text-align:left;color:#4fc3f7">TOTAL</td><td style="color:#fff">'+fmt(totE)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</td><td>100%</td></tr>';
+  h+='</tbody></table></div></div>';
+  document.getElementById('modalBody').innerHTML=h;
+}
+
+function netProfitPLToPlatform(plat){
+  PL_DM.level=2;PL_DM.platform=plat;
+  var plType=PL_DM._plType;
+  var label=plDrillLabel(plType);
+  document.getElementById('modalTitle').textContent='NET PROFIT > '+label+' > '+plat+' - Company Breakdown';
+  document.getElementById('modalNav').style.display='flex';
+  document.getElementById('modalBread').innerHTML='<span>Net Profit</span> &rarr; <span>'+label+'</span> &rarr; <span>'+plat+'</span>';
+  renderPLDrillCompanies();
+}
+
+// ===== REQUIRED TRANSFERRED DRILL-DOWN (Component Breakdown) =====
+function openReqTransferDrill(){
+  PL_DM={type:'reqTransfer',level:0,platform:'',company:'',typeName:'',subType:''};
+  document.getElementById('modalTitle').textContent='REQUIRED TRANSFERRED - Component Breakdown';
+  document.getElementById('modalNav').style.display='none';
+  document.getElementById('modal').classList.add('show');
+  document.body.style.overflow='hidden';
+  modalStack=[];
+  renderReqTransferComponents();
+}
+
+function renderReqTransferComponents(){
+  var pc=DATA.plCards||{};
+  var td=DATA.typeDetail||{};
+  var revenue=pc.revenue||0;
+  var returns=pc.returns||0;
+  var allTypes=Object.keys(td).sort();
+  var PROFIT_ADD_LOCAL={'Adjustment':1,'Reimbursements':1};
+  var reqTransfer=revenue - Math.abs(returns);
+  var components=[];
+  components.push({name:'Orders (Revenue)',value:revenue,sign:'+',color:'#39ff14',drillType:'pl',drillArg:'revenue'});
+  components.push({name:'Returns',value:-Math.abs(returns),sign:'-',color:'#ff003c',drillType:'pl',drillArg:'returns'});
+  for(var ri=0;ri<TYPE_CARD_ORDER.length;ri++){
+    var rName=TYPE_CARD_ORDER[ri];
+    if(rName.toUpperCase()==='TRANSFER')continue;
+    var rData=td[rName];
+    var rTotal=rData?rData.total:0;
+    var isAdd=PROFIT_ADD_LOCAL[rName]?true:false;
+    var val=isAdd?Math.abs(rTotal):-Math.abs(rTotal);
+    if(isAdd){reqTransfer+=Math.abs(rTotal);}else{reqTransfer-=Math.abs(rTotal);}
+    var clr=TYPE_CARD_COLORS[rName]||'#4fc3f7';
+    components.push({name:rName,value:val,sign:isAdd?'+':'-',color:clr,drillType:'type',drillArg:rName});
+  }
+  for(var ei2=0;ei2<allTypes.length;ei2++){
+    var eName2=allTypes[ei2];
+    if(TYPE_CARD_EXCLUDE[eName2])continue;
+    if(TYPE_CARD_ORDER.indexOf(eName2)!==-1)continue;
+    if(eName2.toUpperCase()==='TRANSFER')continue;
+    var eData2=td[eName2];
+    var eTotal2=eData2?eData2.total:0;
+    reqTransfer-=Math.abs(eTotal2);
+    var eClr2=TYPE_CARD_COLORS[eName2]||'#4fc3f7';
+    components.push({name:eName2,value:-Math.abs(eTotal2),sign:'-',color:eClr2,drillType:'type',drillArg:eName2});
+  }
+  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Required Transfer: <span style="color:#ffd700;font-weight:700">'+fmtCur(reqTransfer)+'</span> | '+components.length+' components</div>';
+  h+='<div class="drill-grid">';
+  for(var i=0;i<components.length;i++){
+    var c=components[i];
+    var color=PL_COLORS[i%PL_COLORS.length];
+    var pct=reqTransfer!==0?((c.value/Math.abs(reqTransfer))*100):0;
+    h+='<div class="drill-item" style="border-left-color:'+color+';cursor:pointer" onclick="reqTransferDrillInto(\''+c.drillType+'\',\''+c.drillArg.replace(/'/g,"\\'")+'\')">';
+    h+='<div class="di-name">'+c.name+'</div>';
+    h+='<div class="di-count" style="color:'+(c.sign==='+'?'#39ff14':'#ff6e00')+'">'+c.sign+'</div>';
+    h+='<div class="di-amt" style="color:'+c.color+';font-size:16px">'+fmtCur(c.value)+'</div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+' of total</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<div class="tbox"><h3>REQUIRED TRANSFERRED BREAKDOWN <span>Click any row for platform drill-down</span></h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">COMPONENT</th><th>SIGN</th><th>VALUE</th><th>% OF REQ. TRANSFER</th></tr></thead><tbody>';
+  for(var i=0;i<components.length;i++){
+    var c=components[i];var color=PL_COLORS[i%PL_COLORS.length];
+    var pct=reqTransfer!==0?((c.value/Math.abs(reqTransfer))*100):0;
+    h+='<tr style="cursor:pointer" onclick="reqTransferDrillInto(\''+c.drillType+'\',\''+c.drillArg.replace(/'/g,"\\'")+'\')">';
+    h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+c.name+'</td>';
+    h+='<td style="color:'+(c.sign==='+'?'#39ff14':'#ff6e00')+';font-weight:700">'+c.sign+'</td>';
+    h+='<td style="color:'+c.color+';font-weight:700">'+fmtCur(c.value)+'</td>';
+    h+='<td>'+fmtPct(pct)+'</td></tr>';
+  }
+  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #ffd700"><td style="text-align:left;color:#ffd700">REQUIRED TRANSFERRED</td><td style="color:#ffd700">=</td><td style="color:#ffd700;font-weight:700">'+fmtCur(reqTransfer)+'</td><td>100%</td></tr>';
+  h+='</tbody></table></div></div>';
+  document.getElementById('modalBody').innerHTML=h;
+}
+
+function reqTransferDrillInto(drillType,drillArg){
+  PL_DM.level=1;PL_DM.subType=drillType;
+  if(drillType==='pl'){
+    PL_DM.type='reqTransfer';PL_DM.platform='';
+    var label=plDrillLabel(drillArg);
+    document.getElementById('modalTitle').textContent='REQ. TRANSFERRED > '+label+' - Platform Breakdown';
+    document.getElementById('modalNav').style.display='flex';
+    document.getElementById('modalBread').innerHTML='<span>Req. Transferred</span> &rarr; <span>'+label+'</span>';
+    PL_DM._plType=drillArg;
+    renderReqTransferPLPlatforms();
+  } else {
+    PL_DM.type='reqTransfer';PL_DM.typeName=drillArg;PL_DM.platform='';
+    document.getElementById('modalTitle').textContent='REQ. TRANSFERRED > '+drillArg+' - Platform Breakdown';
+    document.getElementById('modalNav').style.display='flex';
+    document.getElementById('modalBread').innerHTML='<span>Req. Transferred</span> &rarr; <span>'+drillArg+'</span>';
+    renderTypeDrillPlatforms();
+  }
+}
+
+function renderReqTransferPLPlatforms(){
+  var pc=DATA.plCards||{};
+  var plType=PL_DM._plType;
+  var byPlat=plType==='revenue'?pc.revenueByPlatform:plType==='cop'?pc.copByPlatform:pc.returnsByPlatform;
+  var clr=plDrillColor(plType);
+  var lbl=plType==='revenue'?'ORDERS':plType==='cop'?'COP':'RETURNS';
+  if(!byPlat||!Object.keys(byPlat).length){document.getElementById('modalBody').innerHTML='<div style="color:#888;padding:20px;text-align:center">No data</div>';return;}
+  var keys=Object.keys(byPlat).sort(function(a,b){return Math.abs(byPlat[b].value)-Math.abs(byPlat[a].value);});
+  var total=0;for(var i=0;i<keys.length;i++)total+=byPlat[keys[i]].value;
+  var h='<div style="color:#888;font-size:12px;margin-bottom:10px">Total: <span style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</span> | '+keys.length+' platforms</div>';
+  h+='<div class="drill-grid">';
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var d=byPlat[k];var color=PL_COLORS[i%PL_COLORS.length];
+    var pct=total!==0?((d.value/total)*100):0;
+    h+='<div class="drill-item" style="border-left-color:'+color+'" onclick="reqTransferPLToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
+    h+='<div class="di-name">'+k+'</div>';
+    h+='<div class="di-count">'+fmt(d.entries)+' entries</div>';
+    h+='<div class="di-amt" style="color:'+clr+'">'+fmtCur(d.value)+'</div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:2px">'+fmtPct(pct)+'</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<div class="tbox"><h3>'+lbl+' BY PLATFORM <span>Click for company breakdown</span></h3><div class="twrap"><table style="width:100%"><thead><tr><th style="text-align:left">PLATFORM</th><th>ENTRIES</th><th>VALUE</th><th>% OF TOTAL</th></tr></thead><tbody>';
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var d=byPlat[k];var pct=total!==0?((d.value/total)*100):0;var color=PL_COLORS[i%PL_COLORS.length];
+    h+='<tr style="cursor:pointer" onclick="reqTransferPLToPlatform(\''+k.replace(/'/g,"\\'")+'\')">';
+    h+='<td style="text-align:left;border-left:4px solid '+color+';font-weight:700;color:#fff">'+k+'</td>';
+    h+='<td>'+fmt(d.entries)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(d.value)+'</td><td>'+fmtPct(pct)+'</td></tr>';
+  }
+  var totE=0;for(var i=0;i<keys.length;i++)totE+=byPlat[keys[i]].entries;
+  h+='<tr style="background:#0a1e40;font-weight:700;border-top:2px solid #4fc3f7"><td style="text-align:left;color:#4fc3f7">TOTAL</td><td style="color:#fff">'+fmt(totE)+'</td><td style="color:'+clr+';font-weight:700">'+fmtCur(total)+'</td><td>100%</td></tr>';
+  h+='</tbody></table></div></div>';
+  document.getElementById('modalBody').innerHTML=h;
+}
+
+function reqTransferPLToPlatform(plat){
+  PL_DM.level=2;PL_DM.platform=plat;
+  var plType=PL_DM._plType;
+  var label=plDrillLabel(plType);
+  document.getElementById('modalTitle').textContent='REQ. TRANSFERRED > '+label+' > '+plat+' - Company Breakdown';
+  document.getElementById('modalNav').style.display='flex';
+  document.getElementById('modalBread').innerHTML='<span>Req. Transferred</span> &rarr; <span>'+label+'</span> &rarr; <span>'+plat+'</span>';
+  renderPLDrillCompanies();
 }
 
 // ===== OVERVIEW HELPER: build per-entity P&L data =====
@@ -1144,6 +1424,58 @@ function closeModal(){
 }
 
 function modalBack(){
+  // Net Profit drill-down back navigation
+  if(PL_DM.type==='netProfit'){
+    if(PL_DM.level===2){
+      // From company → back to platform
+      PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
+      if(PL_DM.subType==='pl'){
+        var label=plDrillLabel(PL_DM._plType);
+        document.getElementById('modalTitle').textContent='NET PROFIT > '+label+' - Platform Breakdown';
+        document.getElementById('modalBread').innerHTML='<span>Net Profit</span> &rarr; <span>'+label+'</span>';
+        renderNetProfitPLPlatforms();
+      } else {
+        document.getElementById('modalTitle').textContent='NET PROFIT > '+PL_DM.typeName+' - Platform Breakdown';
+        document.getElementById('modalBread').innerHTML='<span>Net Profit</span> &rarr; <span>'+PL_DM.typeName+'</span>';
+        renderTypeDrillPlatforms();
+      }
+      return;
+    }
+    if(PL_DM.level===1){
+      // From platform → back to components
+      PL_DM.level=0;PL_DM.platform='';PL_DM.subType='';
+      document.getElementById('modalTitle').textContent='NET PROFIT - Component Breakdown';
+      document.getElementById('modalNav').style.display='none';
+      renderNetProfitComponents();
+      return;
+    }
+    if(PL_DM.level===0){closeModal();return;}
+  }
+  // Required Transfer drill-down back navigation
+  if(PL_DM.type==='reqTransfer'){
+    if(PL_DM.level===2){
+      PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
+      if(PL_DM.subType==='pl'){
+        var label2=plDrillLabel(PL_DM._plType);
+        document.getElementById('modalTitle').textContent='REQ. TRANSFERRED > '+label2+' - Platform Breakdown';
+        document.getElementById('modalBread').innerHTML='<span>Req. Transferred</span> &rarr; <span>'+label2+'</span>';
+        renderReqTransferPLPlatforms();
+      } else {
+        document.getElementById('modalTitle').textContent='REQ. TRANSFERRED > '+PL_DM.typeName+' - Platform Breakdown';
+        document.getElementById('modalBread').innerHTML='<span>Req. Transferred</span> &rarr; <span>'+PL_DM.typeName+'</span>';
+        renderTypeDrillPlatforms();
+      }
+      return;
+    }
+    if(PL_DM.level===1){
+      PL_DM.level=0;PL_DM.platform='';PL_DM.subType='';
+      document.getElementById('modalTitle').textContent='REQUIRED TRANSFERRED - Component Breakdown';
+      document.getElementById('modalNav').style.display='none';
+      renderReqTransferComponents();
+      return;
+    }
+    if(PL_DM.level===0){closeModal();return;}
+  }
   if(PL_DM.type==='typeCard'&&PL_DM.level===2){
     PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
     document.getElementById('modalTitle').textContent=PL_DM.typeName+' - Platform Breakdown';
@@ -1153,8 +1485,8 @@ function modalBack(){
   }
   if(PL_DM.level===2){
     PL_DM.level=1;PL_DM.platform='';PL_DM.company='';
-    var label=plDrillLabel(PL_DM.type);
-    document.getElementById('modalTitle').textContent=label+' - Platform Breakdown';
+    var label3=plDrillLabel(PL_DM.type);
+    document.getElementById('modalTitle').textContent=label3+' - Platform Breakdown';
     document.getElementById('modalNav').style.display='none';
     renderPLDrillPlatforms();
     return;
