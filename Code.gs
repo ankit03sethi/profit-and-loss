@@ -32,7 +32,7 @@ var PLATFORMS = {
   paymentAdvice: {
     id: '1PWavO2jatx_48djKk491ahEQM-hgLrVzexNqsNe9ajA',
     tab: 'PAYMENT ADVICE',
-    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','G2:G','J2:J','AD2:AD','Q2:Q','T2:T']
+    cols: ['A2:A','B2:B','C2:C','D2:D','E2:E','F2:F','G2:G','G2:G','J2:J','AD2:AD','Q2:Q','Y2:Y']
   },
   sr: {
     id: '1PWavO2jatx_48djKk491ahEQM-hgLrVzexNqsNe9ajA',
